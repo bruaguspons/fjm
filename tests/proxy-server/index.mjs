@@ -2,8 +2,10 @@
 
 import { createServer } from "node:http"
 import crypto from "node:crypto"
+import { readFileSync } from "node:fs"
 import chalk from "chalk"
 import { buildTarGz, buildZip } from "./archives.mjs"
+import { getCompiledStubPath } from "../../e2e/shellcode/java-stub-compiler.mjs"
 
 /**
  * Real-shaped Adoptium/Temurin API v3 fixture server used by the e2e suite.
@@ -19,7 +21,10 @@ import { buildTarGz, buildZip } from "./archives.mjs"
  * unix or a `.zip` on Windows, matching `fjm`'s own archive-format dispatch
  * in `src/downloader.rs`. The archive always targets the *running* platform
  * (not the `os`/`architecture` query params), since this is a mock and the
- * extracted `java` script needs to actually run on the CI host.
+ * extracted `java` binary needs to actually run on the CI host — a real
+ * compiled `java.exe` stub on Windows (see `java-stub-compiler.mjs`), since
+ * neither `Command::new`/MSYS Bash resolve a bare `java` to a `.cmd`/`.bat`
+ * sibling the way `cmd.exe`/PowerShell do.
  *
  * Each fixture major only has a single known patch (see `FIXTURE_MAJORS`),
  * so `feature_releases` only ever has one entry to offer: requesting an
@@ -34,38 +39,58 @@ const FIXTURE_MAJORS = [
   { major: 23, lts: false, semver: "23.0.1+11", javaVersion: "23.0.1" },
 ]
 
-/** @param {string} javaVersion */
-function fakeJavaScriptContent(javaVersion) {
-  const versionLine = `openjdk version "${javaVersion}"`
-  if (process.platform === "win32") {
-    return Buffer.from(`@echo off\r\necho ${versionLine}\r\n`, "utf-8")
-  }
-  return Buffer.from(`#!/bin/sh\necho '${versionLine}'\n`, "utf-8")
-}
-
 /** @param {{ major: number, semver: string, javaVersion: string }} fixture */
-function archiveFor(fixture) {
+async function archiveFor(fixture) {
   const dirName = `jdk-${fixture.semver}`
-  const content = fakeJavaScriptContent(fixture.javaVersion)
+  const versionLine = `openjdk version "${fixture.javaVersion}"`
 
   if (process.platform === "win32") {
+    // Git Bash/MSYS won't resolve a bare `java` to a `.cmd`/`.bat` sibling
+    // the way `cmd.exe`/PowerShell do (only `.exe` is auto-appended), so we
+    // pack the same compiled `java.exe` stub used for seeded installs (see
+    // `java-stub-compiler.mjs`) instead of a batch script.
+    const stubExePath = await getCompiledStubPath()
     return {
       name: `OpenJDK${fixture.major}U-jdk_x64_windows_hotspot_${fixture.javaVersion}.zip`,
-      bytes: buildZip([{ name: `${dirName}/bin/java.cmd`, content }]),
+      bytes: buildZip([
+        { name: `${dirName}/bin/java.exe`, content: readFileSync(stubExePath) },
+        {
+          name: `${dirName}/bin/stub-output.txt`,
+          content: Buffer.from(`${versionLine}\n`, "utf-8"),
+        },
+      ]),
     }
   }
 
   return {
     name: `OpenJDK${fixture.major}U-jdk_x64_linux_hotspot_${fixture.javaVersion}.tar.gz`,
     bytes: buildTarGz([
-      { name: `${dirName}/bin/java`, content, executable: true },
+      {
+        name: `${dirName}/bin/java`,
+        content: Buffer.from(`#!/bin/sh\necho '${versionLine}'\n`, "utf-8"),
+        executable: true,
+      },
     ]),
   }
 }
 
-const ARCHIVES = new Map(
-  FIXTURE_MAJORS.map((fixture) => [fixture.major, archiveFor(fixture)])
-)
+/** @type {Map<number, { name: string, bytes: Buffer }>} */
+const ARCHIVES = new Map()
+
+/**
+ * Populates `ARCHIVES`. Must be awaited before `server` is listened on —
+ * building the Windows fixture involves compiling the `java.exe` stub (see
+ * `java-stub-compiler.mjs`), which is async. Kept as an explicit function
+ * (rather than top-level `await`) since Jest's `globalSetup` loader
+ * `require()`s this module and can't load an ESM graph with top-level await.
+ */
+export async function ready() {
+  for (const [major, archive] of await Promise.all(
+    FIXTURE_MAJORS.map(async (fixture) => [fixture.major, await archiveFor(fixture)]),
+  )) {
+    ARCHIVES.set(major, archive)
+  }
+}
 
 function availableReleasesBody() {
   const ltsMajors = FIXTURE_MAJORS.filter((f) => f.lts).map((f) => f.major)

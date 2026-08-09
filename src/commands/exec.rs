@@ -55,10 +55,6 @@ impl Cmd for Exec {
             .map_err(|source| Error::ApplicableVersionError { source })?
             .ok_or(Error::VersionNotFound { version })?;
 
-        #[cfg(windows)]
-        let bin_path = applicable_version.path().to_path_buf();
-
-        #[cfg(unix)]
         let bin_path = applicable_version.path().join("bin");
 
         let path_env = {

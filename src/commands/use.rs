@@ -201,11 +201,7 @@ fn warn_if_multishell_path_not_in_path_env_var(
     config: &FjmConfig,
 ) {
     if let Some(path_var) = std::env::var_os("PATH") {
-        let bin_path = if cfg!(unix) {
-            multishell_path.join("bin")
-        } else {
-            multishell_path.to_path_buf()
-        };
+        let bin_path = multishell_path.join("bin");
 
         let fixed_path = bin_path.to_str().and_then(shell::maybe_fix_windows_path);
         let fixed_path = fixed_path.as_deref();

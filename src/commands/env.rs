@@ -52,11 +52,7 @@ fn make_symlink(config: &FjmConfig) -> Result<std::path::PathBuf, Error> {
 }
 
 fn set_path_for_multishell(multishell_path: &std::path::Path) {
-    let path_for_node = if cfg!(windows) {
-        multishell_path.to_path_buf()
-    } else {
-        multishell_path.join("bin")
-    };
+    let path_for_node = multishell_path.join("bin");
 
     let current_path = std::env::var_os("PATH").unwrap_or_default();
     let mut split_paths: Vec<_> = std::env::split_paths(&current_path).collect();
@@ -111,11 +107,7 @@ impl Command for Env {
             .or_else(infer_shell)
             .ok_or(Error::CantInferShell)?;
 
-        let binary_path = if cfg!(windows) {
-            shell.path(&multishell_path)
-        } else {
-            shell.path(&multishell_path.join("bin"))
-        };
+        let binary_path = shell.path(&multishell_path.join("bin"));
 
         println!("{}", binary_path?);
 

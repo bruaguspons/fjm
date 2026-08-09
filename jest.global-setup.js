@@ -1,5 +1,6 @@
-import { server } from "./tests/proxy-server/index.mjs"
+import { server, ready } from "./tests/proxy-server/index.mjs"
 
-export default function () {
+export default async function () {
+  await ready()
   server.listen(8080)
 }
