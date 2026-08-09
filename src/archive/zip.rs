@@ -23,7 +23,7 @@ impl<R: Read> Zip<R> {
 
 impl<R: Read> Extract for Zip<R> {
     fn extract_into(mut self: Box<Self>, path: &Path) -> Result<(), Error> {
-        let mut tmp_zip_file = tempfile().expect("Can't get a temporary file");
+        let mut tmp_zip_file = tempfile()?;
 
         debug!("Created a temporary zip file");
         io::copy(&mut self.response, &mut tmp_zip_file)?;
