@@ -17,8 +17,11 @@ pub enum SubCommand {
     #[clap(name = "install", bin_name = "install", visible_aliases = &["i"])]
     Install(commands::install::Install),
 
-    /// Change JDK version
-    #[clap(name = "use", bin_name = "use")]
+    /// Change JDK version for the current shell session only
+    ///
+    /// This only affects the shell it's run in — closing the terminal and opening a new one
+    /// loses it. To change what version new shells start with, use `fjm default` instead.
+    #[clap(name = "use", bin_name = "use", verbatim_doc_comment)]
     Use(commands::r#use::Use),
 
     /// Print and set up required environment variables for fjm
@@ -46,8 +49,10 @@ pub enum SubCommand {
 
     /// Set a version as the default version or get the current default version.
     ///
-    /// This is a shorthand for `fjm alias VERSION default`
-    #[clap(name = "default", bin_name = "default")]
+    /// This is a shorthand for `fjm alias VERSION default`. Unlike `fjm use`, this persists:
+    /// it's what every new shell starts with (as long as `fjm env` is set up in your shell's
+    /// startup file — see the README's Shell Setup section).
+    #[clap(name = "default", bin_name = "default", verbatim_doc_comment)]
     Default(commands::default::Default),
 
     /// Print the current JDK version

@@ -3,6 +3,7 @@ use super::install::Install;
 use crate::current_version::current_version_for;
 use crate::fs;
 use crate::installed_versions;
+use crate::lts::LtsType;
 use crate::outln;
 use crate::shell;
 use crate::system_version;
@@ -16,12 +17,21 @@ use std::path::Path;
 use thiserror::Error;
 
 #[derive(clap::Parser, Debug)]
+#[allow(clippy::struct_excessive_bools)]
 pub struct Use {
     pub version: Option<UserVersionReader>,
 
     /// Which tool's activation slot to target.
     #[clap(long, value_enum, default_value_t)]
     pub tool: ToolKind,
+
+    /// Use the latest LTS version (Java only)
+    #[clap(long, conflicts_with_all = &["version", "latest"])]
+    pub lts: bool,
+
+    /// Use the latest version
+    #[clap(long, conflicts_with_all = &["version", "lts"])]
+    pub latest: bool,
 
     /// Install the version if it isn't installed yet
     #[clap(long)]
@@ -37,6 +47,21 @@ pub struct Use {
     pub info_to_stderr: bool,
 }
 
+impl Use {
+    fn version_reader(&self) -> Result<Option<UserVersionReader>, Error> {
+        match (&self.version, self.lts, self.latest) {
+            (v, false, false) => Ok(v.clone()),
+            (None, true, false) => Ok(Some(UserVersionReader::Direct(UserVersion::Full(
+                Version::Lts(LtsType::Latest),
+            )))),
+            (None, false, true) => Ok(Some(UserVersionReader::Direct(UserVersion::Full(
+                Version::Latest,
+            )))),
+            _ => Err(Error::TooManyVersionsProvided),
+        }
+    }
+}
+
 impl Command for Use {
     type Error = Error;
 
@@ -50,8 +75,8 @@ impl Command for Use {
         let all_versions =
             installed_versions::list_for_tool(config.installations_dir_for(tool), tool)
                 .map_err(|source| Error::VersionListingError { source })?;
-        let requested_version = self
-            .version
+        let version_reader = self.version_reader()?;
+        let requested_version = version_reader
             .unwrap_or_else(|| {
                 let current_dir = std::env::current_dir().unwrap();
                 UserVersionReader::Path(current_dir)
@@ -164,6 +189,8 @@ fn install_new_version(
     Use {
         version: Some(UserVersionReader::Direct(requested_version)),
         tool,
+        lts: false,
+        latest: false,
         install_if_missing: true,
         silent_if_unchanged: false,
         info_to_stderr: false,
@@ -248,6 +275,8 @@ pub enum Error {
     VersionListingError { source: installed_versions::Error },
     #[error("Requested version {} is not currently installed", version)]
     CantFindVersion { version: UserVersion },
+    #[error("Too many versions provided. Please don't use --lts/--latest with a version string.")]
+    TooManyVersionsProvided,
     #[error(transparent)]
     CantInferVersion {
         #[from]

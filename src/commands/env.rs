@@ -192,6 +192,8 @@ impl Command for Env {
             let use_cmd = Use {
                 version: None,
                 tool: ToolKind::Java,
+                lts: false,
+                latest: false,
                 install_if_missing: false,
                 silent_if_unchanged: true,
                 info_to_stderr: true,

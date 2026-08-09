@@ -9,12 +9,12 @@ Commands:
   list-remote  List all remote JDK versions [alias: ls-remote]
   list         List all locally installed JDK versions [alias: ls]
   install      Install a new JDK version [alias: i]
-  use          Change JDK version
+  use          Change JDK version for the current shell session only
   env          Print and set up required environment variables for fjm
   completions  Print shell completions to stdout
   alias        Alias a version to a common name
   unalias      Remove an alias definition
-  default      Set a version as the default version or get the current default version
+  default      Set a version as the default version or get the current default version.
   current      Print the current JDK version
   exec         Run a command within fjm context
   uninstall    Uninstall a JDK version [alias: uni]
@@ -281,7 +281,9 @@ Options:
 # `fjm use`
 
 ```
-Change JDK version
+Change JDK version for the current shell session only
+
+This only affects the shell it's run in — closing the terminal and opening a new one loses it. To change what version new shells start with, use `fjm default` instead.
 
 Usage: fjm use [OPTIONS] [VERSION]
 
@@ -602,7 +604,7 @@ Options:
 ```
 Set a version as the default version or get the current default version.
 
-This is a shorthand for `fjm alias VERSION default`
+This is a shorthand for `fjm alias VERSION default`. Unlike `fjm use`, this persists: it's what every new shell starts with (as long as `fjm env` is set up in your shell's startup file — see the README's Shell Setup section).
 
 Usage: fjm default [OPTIONS] [VERSION]
 

@@ -49,27 +49,68 @@ release; other distribution channels (Homebrew, standalone release binaries) are
 
 ### Shell Setup
 
-Set up environment variables by evaluating the output of `fjm env`:
+`fjm` needs to run `eval "$(fjm env ...)"` on every new shell, so it has to live in your shell's
+startup file — not just be run once in your current terminal. Otherwise a new terminal starts with
+no `fjm`-managed JDK on `PATH` at all, and it looks as if `fjm use`/`fjm default` "didn't persist".
 
-#### Bash
+#### Permanent (recommended)
+
+Run one of the commands below once, per shell, to add it to your startup file. Each is
+idempotent — safe to re-run without adding a duplicate line.
+
+##### Bash
+
+```bash
+grep -qF 'fjm env' ~/.bashrc || echo 'eval "$(fjm env --use-on-cd --shell bash)"' >> ~/.bashrc
+```
+
+##### Zsh
+
+```zsh
+grep -qF 'fjm env' ~/.zshrc || echo 'eval "$(fjm env --use-on-cd --shell zsh)"' >> ~/.zshrc
+```
+
+##### Fish shell
+
+```fish
+grep -qF 'fjm env' ~/.config/fish/config.fish 2>/dev/null; or echo 'fjm env --use-on-cd --shell fish | source' >> ~/.config/fish/config.fish
+```
+
+##### PowerShell
+
+```powershell
+if (-not (Test-Path $PROFILE)) { New-Item -ItemType File -Path $PROFILE -Force | Out-Null }
+if (-not (Select-String -Path $PROFILE -Pattern 'fjm env' -Quiet)) {
+  Add-Content -Path $PROFILE -Value 'fjm env --use-on-cd --shell powershell | Out-String | Invoke-Expression'
+}
+```
+
+Then open a new terminal (or `source`/re-import the file you just edited) for it to take effect.
+
+#### Current terminal session only
+
+To try `fjm` out without touching your startup file, just run the `eval` directly — it only
+affects the terminal you run it in, and is lost once you close it:
+
+##### Bash
 
 ```bash
 eval "$(fjm env --use-on-cd --shell bash)"
 ```
 
-#### Zsh
+##### Zsh
 
 ```zsh
 eval "$(fjm env --use-on-cd --shell zsh)"
 ```
 
-#### Fish shell
+##### Fish shell
 
 ```fish
 fjm env --use-on-cd --shell fish | source
 ```
 
-#### PowerShell
+##### PowerShell
 
 ```powershell
 fjm env --use-on-cd --shell powershell | Out-String | Invoke-Expression
@@ -86,11 +127,15 @@ $ java --version > .java-version
 ## Daily usage
 
 - `fjm install <version>` — download and extract a JDK (via Adoptium/Temurin), e.g. `fjm install 21` or `fjm install --lts`.
-- `fjm use <version>` — activate that version in the current shell (`--install-if-missing` installs it if missing).
-- `fjm default <version>` — set the default version for new shells.
+- `fjm use <version>` — activate that version **for the current shell session only** (`--install-if-missing` installs it if missing). Closing the terminal and opening a new one loses this — it does not change what new shells start with.
+- `fjm default <version>` — set the version that **new shells start with**. If you want a version to "stick" across terminals, this is the command you want, not `fjm use`.
 - `fjm list` / `fjm list-remote` — installed versions / versions available to download.
 - `fjm current` — print the active version.
 - With `--use-on-cd` enabled, `cd`-ing into a directory with a `.java-version` file switches the version automatically.
+
+> `fjm use` vs `fjm default`, in short: `use` is "just for this terminal", `default` is "from now on,
+> every new terminal". A `.java-version` file in a project directory overrides both, for anyone
+> `cd`-ing into it with `--use-on-cd` enabled.
 
 See [docs/commands.md](./docs/commands.md) for the full CLI reference.
 

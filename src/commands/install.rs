@@ -402,6 +402,8 @@ fn use_installed_version(
             version.clone(),
         ))),
         tool,
+        lts: false,
+        latest: false,
         install_if_missing: false,
         silent_if_unchanged: false,
         info_to_stderr: false,
