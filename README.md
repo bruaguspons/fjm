@@ -12,15 +12,7 @@
 
 `fjm` follows the same activation model for this first stage — see [PRD.md](./PRD.md) for the full research behind this decision, and for the shim-based approach (à la `rbenv`/`asdf`) being evaluated as future work to remove the shell-sourcing dependency entirely.
 
-### Prior art
-
-| Project | Activation mechanism | Works without sourcing (cron/CI/`docker exec`)? |
-|---|---|---|
-| `sdkman-cli` | Bash function sourced in `.bashrc` | ❌ No |
-| `nvm` | Bash function (`nvm()`) sourced in `.bashrc`. Doesn't even exist as a command without sourcing. | ❌ No |
-| `fnm` | Standalone Rust binary + `eval "$(fnm env)"` in `.bashrc`. Creates a temporary per-shell symlink and prepends its `bin/` to `$PATH` via `std::env::set_var`. | ❌ No (same pattern, more polished) |
-
-**Conclusion:** this isn't an implementation detail `sdkman` got wrong — it's a pattern inherited by the whole `nvm → fnm → sdkman` generation of shell-function/`eval`-based version managers. All of them require the shell to have sourced something at startup.
+This isn't an implementation detail `sdkman` got wrong — it's a pattern inherited by the whole `nvm → fnm → sdkman` generation of shell-function/`eval`-based version managers. All of them require the shell to have sourced something at startup.
 
 `fjm` is based on [`fnm`](https://github.com/Schniz/fnm) (Fast Node Manager) — it reuses its proven activation design as the starting point for a Java-focused version manager.
 
@@ -132,3 +124,7 @@ cargo run -- --help # Will behave like `fjm --help`
 ```sh
 cargo test
 ```
+
+## License
+
+GPLv3 — see [LICENSE](./LICENSE).
