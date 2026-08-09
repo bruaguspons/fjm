@@ -52,10 +52,11 @@ jobs:
       - name: Install Node.js project dependencies
         run: pnpm install
 
-      - name: Create Release Pull Request
+      - name: Create Release Pull Request or tag release
         uses: changesets/action@v1
         with:
           version: "pnpm version:prepare"
+          publish: "pnpm changeset tag"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TERM: xterm

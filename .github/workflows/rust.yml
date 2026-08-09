@@ -5,6 +5,8 @@ on:
   push:
     branches:
       - main
+    tags:
+      - "v*"
 
 concurrency:
   group: ci-${{ github.head_ref }}
@@ -333,6 +335,58 @@ jobs:
         with:
           name: fjm-${{ matrix.arch }}
           path: target/${{ env.RUST_TARGET }}/release/fjm
+
+  github_release:
+    name: "Create GitHub Release"
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs:
+      - build_release
+      - build_macos_release
+      - build_static_linux_binary
+      - build_static_arm_binary
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: fjm-windows
+          path: artifacts/fjm-windows
+      - uses: actions/download-artifact@v8
+        with:
+          name: fjm-macos
+          path: artifacts/fjm-macos
+      - uses: actions/download-artifact@v8
+        with:
+          name: fjm-linux
+          path: artifacts/fjm-linux
+      - uses: actions/download-artifact@v8
+        with:
+          name: fjm-arm64
+          path: artifacts/fjm-arm64
+      - uses: actions/download-artifact@v8
+        with:
+          name: fjm-arm32
+          path: artifacts/fjm-arm32
+      - name: Zip release binaries
+        run: |
+          sudo apt-get update && sudo apt-get install -y zip
+          chmod +x artifacts/fjm-macos/fjm artifacts/fjm-linux/fjm artifacts/fjm-arm64/fjm artifacts/fjm-arm32/fjm
+          (cd artifacts/fjm-windows && zip ../../fjm-windows.zip fjm.exe)
+          (cd artifacts/fjm-macos && zip ../../fjm-macos.zip fjm)
+          (cd artifacts/fjm-linux && zip ../../fjm-linux.zip fjm)
+          (cd artifacts/fjm-arm64 && zip ../../fjm-arm64.zip fjm)
+          (cd artifacts/fjm-arm32 && zip ../../fjm-arm32.zip fjm)
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          generate_release_notes: true
+          files: |
+            fjm-windows.zip
+            fjm-macos.zip
+            fjm-linux.zip
+            fjm-arm64.zip
+            fjm-arm32.zip
 
   ensure_commands_markdown_is_up_to_date:
     runs-on: ubuntu-latest
