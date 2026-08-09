@@ -283,7 +283,8 @@ Options:
 ```
 Change JDK version for the current shell session only
 
-This only affects the shell it's run in — closing the terminal and opening a new one loses it. To change what version new shells start with, use `fjm default` instead.
+This only affects the shell it's run in — closing the terminal and opening a new one
+loses it. To change what version new shells start with, use `fjm default` instead.
 
 Usage: fjm use [OPTIONS] [VERSION]
 
@@ -304,8 +305,8 @@ Options:
           [default: java]
           [possible values: java, maven]
 
-      --install-if-missing
-          Install the version if it isn't installed yet
+      --lts
+          Use the latest LTS version (Java only)
 
       --maven-dist-mirror <MAVEN_DIST_MIRROR>
           Maven Central (or a mirror) base URL override, used to resolve and download Maven distributions. Symmetric to `--jdk-dist-mirror`
@@ -318,8 +319,11 @@ Options:
 
           [env: FJM_DIR]
 
-      --silent-if-unchanged
-          Don't output a message identifying the version being used if it will not change due to execution of this command
+      --latest
+          Use the latest version
+
+      --install-if-missing
+          Install the version if it isn't installed yet
 
       --log-level <LOG_LEVEL>
           The log level of fjm commands
@@ -327,6 +331,9 @@ Options:
           [env: FJM_LOGLEVEL]
           [default: info]
           [possible values: quiet, error, info]
+
+      --silent-if-unchanged
+          Don't output a message identifying the version being used if it will not change due to execution of this command
 
       --arch <ARCH>
           Override the architecture of the installed JDK binary. Defaults to arch of fjm binary
@@ -604,7 +611,9 @@ Options:
 ```
 Set a version as the default version or get the current default version.
 
-This is a shorthand for `fjm alias VERSION default`. Unlike `fjm use`, this persists: it's what every new shell starts with (as long as `fjm env` is set up in your shell's startup file — see the README's Shell Setup section).
+This is a shorthand for `fjm alias VERSION default`. Unlike `fjm use`, this persists:
+it's what every new shell starts with (as long as `fjm env` is set up in your shell's
+startup file — see the README's Shell Setup section).
 
 Usage: fjm default [OPTIONS] [VERSION]
 
