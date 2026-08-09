@@ -1,6 +1,6 @@
 [package]
 name = "fjm"
-version = "1.2.0"
+version = "1.2.1"
 authors = ["bruaguspons <bruaguspons@gmail.com>"]
 edition = "2021"
 build = "build.rs"

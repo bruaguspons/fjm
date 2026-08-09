@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.1
+
+### Patch Changes
+
+- [`ef55e1a`](https://github.com/bruaguspons/fjm/commit/ef55e1a4a4021b5c3a800229fd37f59eaabf74f6) Thanks [@bruaguspons](https://github.com/bruaguspons)! - Fix `fjm install` panicking instead of returning a clean error when it can't create a temporary file while extracting a `.zip` JDK archive (e.g. full disk, no write permission on the temp dir). This path now surfaces `Error::IoError` like the rest of the extraction code instead of calling `.expect()`.
+
 ## 1.2.0
 
 ### Minor Changes
