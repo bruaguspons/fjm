@@ -15,5 +15,6 @@ pub fn get(url: impl IntoUrl) -> Result<Response, Error> {
         .get(url)
         // Some sites require a user agent.
         .header("User-Agent", concat!("fjm ", env!("CARGO_PKG_VERSION")))
-        .send()?)
+        .send()?
+        .error_for_status()?)
 }

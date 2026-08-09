@@ -48,6 +48,27 @@ export function buildTarGz(files) {
   return zlib.gzipSync(buildTar(files))
 }
 
+const CRC32_TABLE = (() => {
+  const table = new Uint32Array(256)
+  for (let n = 0; n < 256; n++) {
+    let c = n
+    for (let k = 0; k < 8; k++) {
+      c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1
+    }
+    table[n] = c
+  }
+  return table
+})()
+
+/** @param {Buffer} content */
+function crc32(content) {
+  let crc = 0xffffffff
+  for (const byte of content) {
+    crc = CRC32_TABLE[(crc ^ byte) & 0xff] ^ (crc >>> 8)
+  }
+  return (crc ^ 0xffffffff) >>> 0
+}
+
 /** @param {{ name: string, content: Buffer }[]} files */
 export function buildZip(files) {
   const localParts = []
@@ -56,7 +77,7 @@ export function buildZip(files) {
 
   for (const file of files) {
     const nameBuf = Buffer.from(file.name, "utf-8")
-    const crc = zlib.crc32(file.content) >>> 0
+    const crc = crc32(file.content)
 
     const localHeader = Buffer.alloc(30)
     localHeader.writeUInt32LE(0x04034b50, 0)
