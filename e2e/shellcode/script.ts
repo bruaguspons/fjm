@@ -70,6 +70,7 @@ class Script {
             .join(path.delimiter),
           FJM_DIR: this.config.fjmDir,
           FJM_JDK_DIST_MIRROR: "http://localhost:8080",
+          FJM_MAVEN_DIST_MIRROR: "http://localhost:8080",
         }
 
         delete newProcessEnv.NODE_OPTIONS

@@ -1,0 +1,162 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Bash .java-version and .maven-version coexist in one directory: Bash 1`] = `
+"set -e
+eval "$(fjm env)"
+fjm use
+if [ "$(java --version)" != 'openjdk version "17.0.2"' ]; then
+  echo "Expected java version to be 'openjdk version "17.0.2"'. Got $(java --version)"
+  exit 1
+fi
+fjm use --tool maven
+if [ "$(mvn --version)" != 'Apache Maven 3.9.9' ]; then
+  echo "Expected maven version to be 'Apache Maven 3.9.9'. Got $(mvn --version)"
+  exit 1
+fi"
+`;
+
+exports[`Bash use --tool maven activates Maven without disturbing Java: Bash 1`] = `
+"set -e
+eval "$(fjm env)"
+fjm use 17.0.2
+if [ "$(java --version)" != 'openjdk version "17.0.2"' ]; then
+  echo "Expected java version to be 'openjdk version "17.0.2"'. Got $(java --version)"
+  exit 1
+fi
+fjm use --tool maven 3.9.9
+if [ "$(mvn --version)" != 'Apache Maven 3.9.9' ]; then
+  echo "Expected maven version to be 'Apache Maven 3.9.9'. Got $(mvn --version)"
+  exit 1
+fi
+if [ "$(java --version)" != 'openjdk version "17.0.2"' ]; then
+  echo "Expected java version to be 'openjdk version "17.0.2"'. Got $(java --version)"
+  exit 1
+fi"
+`;
+
+exports[`Bash use --tool maven works with no Java version active: Bash 1`] = `
+"set -e
+eval "$(fjm env)"
+fjm use --tool maven 3.9.9
+if [ "$(mvn --version)" != 'Apache Maven 3.9.9' ]; then
+  echo "Expected maven version to be 'Apache Maven 3.9.9'. Got $(mvn --version)"
+  exit 1
+fi"
+`;
+
+exports[`Fish .java-version and .maven-version coexist in one directory: Fish 1`] = `
+"fjm env | source
+fjm use
+set ____test____ (java --version)
+if test "$____test____" != 'openjdk version "17.0.2"'
+  echo "Expected java version to be 'openjdk version "17.0.2"'. Got $____test____"
+  exit 1
+end
+fjm use --tool maven
+set ____test____ (mvn --version)
+if test "$____test____" != 'Apache Maven 3.9.9'
+  echo "Expected maven version to be 'Apache Maven 3.9.9'. Got $____test____"
+  exit 1
+end"
+`;
+
+exports[`Fish use --tool maven activates Maven without disturbing Java: Fish 1`] = `
+"fjm env | source
+fjm use 17.0.2
+set ____test____ (java --version)
+if test "$____test____" != 'openjdk version "17.0.2"'
+  echo "Expected java version to be 'openjdk version "17.0.2"'. Got $____test____"
+  exit 1
+end
+fjm use --tool maven 3.9.9
+set ____test____ (mvn --version)
+if test "$____test____" != 'Apache Maven 3.9.9'
+  echo "Expected maven version to be 'Apache Maven 3.9.9'. Got $____test____"
+  exit 1
+end
+set ____test____ (java --version)
+if test "$____test____" != 'openjdk version "17.0.2"'
+  echo "Expected java version to be 'openjdk version "17.0.2"'. Got $____test____"
+  exit 1
+end"
+`;
+
+exports[`Fish use --tool maven works with no Java version active: Fish 1`] = `
+"fjm env | source
+fjm use --tool maven 3.9.9
+set ____test____ (mvn --version)
+if test "$____test____" != 'Apache Maven 3.9.9'
+  echo "Expected maven version to be 'Apache Maven 3.9.9'. Got $____test____"
+  exit 1
+end"
+`;
+
+exports[`PowerShell .java-version and .maven-version coexist in one directory: PowerShell 1`] = `
+"$ErrorActionPreference = "Stop"
+fjm env | Out-String | Invoke-Expression
+fjm use
+if ( "$(java --version)" -ne 'openjdk version "17.0.2"' ) { echo "Expected java version to be 'openjdk version "17.0.2"'. Got $(java --version)"; exit 1 }
+fjm use --tool maven
+if ( "$(mvn --version)" -ne 'Apache Maven 3.9.9' ) { echo "Expected maven version to be 'Apache Maven 3.9.9'. Got $(mvn --version)"; exit 1 }"
+`;
+
+exports[`PowerShell use --tool maven activates Maven without disturbing Java: PowerShell 1`] = `
+"$ErrorActionPreference = "Stop"
+fjm env | Out-String | Invoke-Expression
+fjm use 17.0.2
+if ( "$(java --version)" -ne 'openjdk version "17.0.2"' ) { echo "Expected java version to be 'openjdk version "17.0.2"'. Got $(java --version)"; exit 1 }
+fjm use --tool maven 3.9.9
+if ( "$(mvn --version)" -ne 'Apache Maven 3.9.9' ) { echo "Expected maven version to be 'Apache Maven 3.9.9'. Got $(mvn --version)"; exit 1 }
+if ( "$(java --version)" -ne 'openjdk version "17.0.2"' ) { echo "Expected java version to be 'openjdk version "17.0.2"'. Got $(java --version)"; exit 1 }"
+`;
+
+exports[`PowerShell use --tool maven works with no Java version active: PowerShell 1`] = `
+"$ErrorActionPreference = "Stop"
+fjm env | Out-String | Invoke-Expression
+fjm use --tool maven 3.9.9
+if ( "$(mvn --version)" -ne 'Apache Maven 3.9.9' ) { echo "Expected maven version to be 'Apache Maven 3.9.9'. Got $(mvn --version)"; exit 1 }"
+`;
+
+exports[`Zsh .java-version and .maven-version coexist in one directory: Zsh 1`] = `
+"set -e
+eval "$(fjm env)"
+fjm use
+if [ "$(java --version)" != 'openjdk version "17.0.2"' ]; then
+  echo "Expected java version to be 'openjdk version "17.0.2"'. Got $(java --version)"
+  exit 1
+fi
+fjm use --tool maven
+if [ "$(mvn --version)" != 'Apache Maven 3.9.9' ]; then
+  echo "Expected maven version to be 'Apache Maven 3.9.9'. Got $(mvn --version)"
+  exit 1
+fi"
+`;
+
+exports[`Zsh use --tool maven activates Maven without disturbing Java: Zsh 1`] = `
+"set -e
+eval "$(fjm env)"
+fjm use 17.0.2
+if [ "$(java --version)" != 'openjdk version "17.0.2"' ]; then
+  echo "Expected java version to be 'openjdk version "17.0.2"'. Got $(java --version)"
+  exit 1
+fi
+fjm use --tool maven 3.9.9
+if [ "$(mvn --version)" != 'Apache Maven 3.9.9' ]; then
+  echo "Expected maven version to be 'Apache Maven 3.9.9'. Got $(mvn --version)"
+  exit 1
+fi
+if [ "$(java --version)" != 'openjdk version "17.0.2"' ]; then
+  echo "Expected java version to be 'openjdk version "17.0.2"'. Got $(java --version)"
+  exit 1
+fi"
+`;
+
+exports[`Zsh use --tool maven works with no Java version active: Zsh 1`] = `
+"set -e
+eval "$(fjm env)"
+fjm use --tool maven 3.9.9
+if [ "$(mvn --version)" != 'Apache Maven 3.9.9' ]; then
+  echo "Expected maven version to be 'Apache Maven 3.9.9'. Got $(mvn --version)"
+  exit 1
+fi"
+`;

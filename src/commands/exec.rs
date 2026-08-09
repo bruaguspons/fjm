@@ -1,9 +1,10 @@
 use super::command::Command as Cmd;
 use crate::choose_version_for_user_input::{
-    choose_version_for_user_input, Error as UserInputError,
+    choose_version_for_user_input_for_tool, Error as UserInputError,
 };
 use crate::config::FjmConfig;
 use crate::outln;
+use crate::tool_kind::ToolKind;
 use crate::user_version::UserVersion;
 use crate::user_version_reader::UserVersionReader;
 use colored::Colorize;
@@ -19,6 +20,9 @@ pub struct Exec {
     /// Deprecated. This is the default now.
     #[clap(long = "using-file", hide = true)]
     using_file: bool,
+    /// Which tool's version to resolve `--using` against.
+    #[clap(long, value_enum, default_value_t)]
+    tool: ToolKind,
     /// The command to run
     arguments: Vec<String>,
 }
@@ -37,6 +41,8 @@ impl Cmd for Exec {
             );
         }
 
+        let tool = self.tool;
+
         let (binary, arguments) = self
             .arguments
             .split_first()
@@ -48,10 +54,10 @@ impl Cmd for Exec {
                 let current_dir = std::env::current_dir().unwrap();
                 UserVersionReader::Path(current_dir)
             })
-            .into_user_version(config)
+            .into_user_version_for_tool(config, tool)
             .ok_or(Error::CantInferVersion)?;
 
-        let applicable_version = choose_version_for_user_input(&version, config)
+        let applicable_version = choose_version_for_user_input_for_tool(&version, config, tool)
             .map_err(|source| Error::ApplicableVersionError { source })?
             .ok_or(Error::VersionNotFound { version })?;
 
@@ -111,6 +117,6 @@ pub enum Error {
     },
     #[error("Can't read exit code from process.\nMaybe the process was killed using a signal?")]
     CantReadProcessExitCode,
-    #[error("command not provided. Please provide a command to run as an argument, like {} or {}.\n{} {}", "java".italic(), "bash".italic(), "example:".yellow().bold(), "fjm exec --using=17 java --version".italic().yellow())]
+    #[error("command not provided. Please provide a command to run as an argument, like {} or {}.\n{} {}", "java".italic(), "bash".italic(), "example:".yellow().bold(), "fjm exec --using=17.0.2 java --version".italic().yellow())]
     NoBinaryProvided,
 }

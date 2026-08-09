@@ -2,7 +2,7 @@
 
 ## 1. Resumen
 
-`fjm` es un gestor de versiones de Java, escrito en Rust, inspirado en gestores de versiones ya probados del ecosistema Node y JVM (ver el README para el detalle de prior-art). Objetivo: instalación instantánea, un solo binario, y una experiencia tan simple como la de esos gestores, pero para el ecosistema Java (JDKs, y potencialmente otras herramientas del ecosistema como Maven/Gradle en el futuro — fuera de alcance para v1).
+`fjm` es un gestor de versiones para el ecosistema Java, escrito en Rust, inspirado en gestores de versiones ya probados del ecosistema Node y JVM (ver el README para el detalle de prior-art). Objetivo: instalación instantánea, un solo binario, y una experiencia tan simple como la de esos gestores, para JDKs y Maven como herramientas independientes (Gradle queda diferido, ver sección 4).
 
 ## 2. Problema
 
@@ -33,8 +33,10 @@ El modelo de shims queda **documentado como opción futura** (ver sección 8) pe
 ## 4. No objetivos (v1)
 
 - Resolver el problema de shells no interactivas (queda para una v2 con shims — ver sección 8).
-- Gestión de otras herramientas del ecosistema (Maven, Gradle, etc.).
-- Reemplazar `sdkman` como gestor de "candidates" genérico — el foco es exclusivamente JDKs.
+- Gestión de Gradle — queda explícitamente diferida a un cambio futuro (el modelo de `ToolKind`/`RemoteVersionIndex` introducido para Maven está diseñado para que agregar Gradle sea una nueva variante de enum + un nuevo módulo de índice remoto, sin rearquitectura).
+- Reemplazar `sdkman` como gestor de "candidates" genérico — el foco es exclusivamente JDKs y, desde el cambio de soporte multi-herramienta, Maven.
+
+> **Nota (multi-tool activation + Maven support):** Maven dejó de estar fuera de alcance. `fjm` ahora gestiona JDKs y Maven como `ToolKind`s independientes y paralelos (slots de activación separados, `JAVA_HOME`/`MAVEN_HOME`, `.java-version`/`.maven-version`), reutilizando la misma infraestructura de descarga/instalación. Gradle permanece fuera de alcance por ahora, ver arriba.
 
 ## 5. Usuarios objetivo
 

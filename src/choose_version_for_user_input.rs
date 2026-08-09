@@ -2,6 +2,7 @@ use crate::config::FjmConfig;
 use crate::fs;
 use crate::installed_versions;
 use crate::system_version;
+use crate::tool_kind::ToolKind;
 use crate::user_version::UserVersion;
 use crate::version::Version;
 use colored::Colorize;
@@ -25,11 +26,23 @@ impl ApplicableVersion {
     }
 }
 
+#[allow(
+    dead_code,
+    reason = "ToolKind::Java-default convenience wrapper; every current call site knows its tool and calls choose_version_for_user_input_for_tool directly, but this documents the default-tool entry point for future direct callers"
+)]
 pub fn choose_version_for_user_input<'a>(
     requested_version: &'a UserVersion,
     config: &'a FjmConfig,
 ) -> Result<Option<ApplicableVersion>, Error> {
-    let all_versions = installed_versions::list(config.installations_dir())
+    choose_version_for_user_input_for_tool(requested_version, config, ToolKind::Java)
+}
+
+pub fn choose_version_for_user_input_for_tool<'a>(
+    requested_version: &'a UserVersion,
+    config: &'a FjmConfig,
+    tool: ToolKind,
+) -> Result<Option<ApplicableVersion>, Error> {
+    let all_versions = installed_versions::list_for_tool(config.installations_dir_for(tool), tool)
         .map_err(|source| Error::VersionListing { source })?;
 
     let result = if let UserVersion::Full(Version::Bypassed) = requested_version {
@@ -42,7 +55,7 @@ pub fn choose_version_for_user_input<'a>(
             version: Version::Bypassed,
         })
     } else if let Some(alias_name) = requested_version.alias_name() {
-        let alias_path = config.aliases_dir().join(&alias_name);
+        let alias_path = config.aliases_dir_for(tool).join(&alias_name);
         let system_path = system_version::path();
         if matches!(fs::shallow_read_symlink(&alias_path), Ok(shallow_path) if shallow_path == system_path)
         {
@@ -55,7 +68,7 @@ pub fn choose_version_for_user_input<'a>(
                 version: Version::Bypassed,
             })
         } else if alias_path.exists() {
-            info!("Using JDK for alias {}", alias_name.cyan());
+            info!("Using {} for alias {}", tool, alias_name.cyan());
             Some(ApplicableVersion {
                 path: alias_path,
                 version: Version::Alias(alias_name),
@@ -66,11 +79,11 @@ pub fn choose_version_for_user_input<'a>(
             });
         }
     } else {
-        let current_version = requested_version.to_version(&all_versions, config);
+        let current_version = requested_version.to_version_for_tool(&all_versions, config, tool);
         current_version.map(|version| {
-            info!("Using JDK {}", version.to_string().cyan());
+            info!("Using {} {}", tool, version.to_string().cyan());
             let path = config
-                .installations_dir()
+                .installations_dir_for(tool)
                 .join(version.to_string())
                 .join("installation");
 

@@ -1,6 +1,7 @@
 use crate::config::FjmConfig;
 use crate::fs::{remove_symlink_dir, shallow_read_symlink, symlink_dir};
 use crate::system_version;
+use crate::tool_kind::ToolKind;
 use crate::version::Version;
 use std::convert::TryInto;
 use std::path::PathBuf;
@@ -9,11 +10,12 @@ pub fn create_alias(
     config: &FjmConfig,
     common_name: &str,
     version: &Version,
+    tool: ToolKind,
 ) -> std::io::Result<()> {
-    let aliases_dir = config.aliases_dir();
+    let aliases_dir = config.aliases_dir_for(tool);
     std::fs::create_dir_all(&aliases_dir)?;
 
-    let version_dir = version.installation_path(config);
+    let version_dir = version.installation_path(config, tool);
     let alias_dir = aliases_dir.join(common_name);
 
     remove_symlink_dir(&alias_dir).ok();
@@ -22,16 +24,20 @@ pub fn create_alias(
     Ok(())
 }
 
-pub fn list_aliases(config: &FjmConfig) -> std::io::Result<Vec<StoredAlias>> {
-    let vec: Vec<_> = std::fs::read_dir(config.aliases_dir())?
+pub fn list_aliases(config: &FjmConfig, tool: ToolKind) -> std::io::Result<Vec<StoredAlias>> {
+    let vec: Vec<_> = std::fs::read_dir(config.aliases_dir_for(tool))?
         .filter_map(Result::ok)
         .filter_map(|x| TryInto::<StoredAlias>::try_into(x.path().as_path()).ok())
         .collect();
     Ok(vec)
 }
 
-pub fn get_alias_by_name(config: &FjmConfig, alias_name: &str) -> Option<StoredAlias> {
-    let alias_path = config.aliases_dir().join(alias_name);
+pub fn get_alias_by_name(
+    config: &FjmConfig,
+    alias_name: &str,
+    tool: ToolKind,
+) -> Option<StoredAlias> {
+    let alias_path = config.aliases_dir_for(tool).join(alias_name);
     TryInto::<StoredAlias>::try_into(alias_path.as_path()).ok()
 }
 

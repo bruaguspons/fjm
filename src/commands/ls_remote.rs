@@ -1,5 +1,7 @@
 use crate::config::FjmConfig;
+use crate::remote_maven_index;
 use crate::remote_node_index;
+use crate::tool_kind::ToolKind;
 use crate::user_version::UserVersion;
 
 use colored::Colorize;
@@ -7,11 +9,15 @@ use thiserror::Error;
 
 #[derive(clap::Parser, Debug)]
 pub struct LsRemote {
+    /// Which tool's remote index to list.
+    #[clap(long, value_enum, default_value_t)]
+    tool: ToolKind,
+
     /// Filter versions by a user-defined version or a semver range
     #[arg(long)]
     filter: Option<UserVersion>,
 
-    /// Show only LTS versions
+    /// Show only LTS versions (Java only)
     #[arg(long)]
     lts: bool,
 
@@ -47,7 +53,16 @@ impl super::command::Command for LsRemote {
     type Error = Error;
 
     fn apply(self, config: &FjmConfig) -> Result<(), Self::Error> {
-        let mut all_versions = remote_node_index::list(&config.jdk_dist_mirror)?;
+        match self.tool {
+            ToolKind::Java => self.list_java(config),
+            ToolKind::Maven => self.list_maven(config),
+        }
+    }
+}
+
+impl LsRemote {
+    fn list_java(self, config: &FjmConfig) -> Result<(), Error> {
+        let mut all_versions = remote_node_index::list(config.dist_mirror_for(ToolKind::Java))?;
 
         if self.lts {
             all_versions.retain(|v| v.lts);
@@ -82,6 +97,31 @@ impl super::command::Command for LsRemote {
 
         Ok(())
     }
+
+    fn list_maven(self, config: &FjmConfig) -> Result<(), Error> {
+        let mut all_versions = remote_maven_index::list(config.dist_mirror_for(ToolKind::Maven))?;
+
+        all_versions.sort();
+
+        if self.latest {
+            truncate_except_latest(&mut all_versions);
+        }
+
+        if let SortingMethod::Descending = self.sort {
+            all_versions.reverse();
+        }
+
+        if all_versions.is_empty() {
+            eprintln!("{}", "No versions were found!".red());
+            return Ok(());
+        }
+
+        for version in &all_versions {
+            println!("{}", version.v_str());
+        }
+
+        Ok(())
+    }
 }
 
 #[derive(Debug, Error)]
@@ -90,6 +130,11 @@ pub enum Error {
     RemoteListing {
         #[from]
         source: remote_node_index::Error,
+    },
+    #[error(transparent)]
+    RemoteMavenListing {
+        #[from]
+        source: remote_maven_index::Error,
     },
 }
 

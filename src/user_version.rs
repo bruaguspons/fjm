@@ -1,3 +1,4 @@
+use crate::tool_kind::ToolKind;
 use crate::version::Version;
 use std::str::FromStr;
 
@@ -14,6 +15,10 @@ pub enum UserVersion {
 }
 
 impl UserVersion {
+    #[allow(
+        dead_code,
+        reason = "ToolKind::Java-default convenience wrapper around to_version_for_tool; kept for symmetry with the rest of the tool-scoped API"
+    )]
     pub fn to_version<'a, T>(
         &self,
         available_versions: T,
@@ -22,9 +27,21 @@ impl UserVersion {
     where
         T: IntoIterator<Item = &'a Version>,
     {
+        self.to_version_for_tool(available_versions, config, ToolKind::Java)
+    }
+
+    pub fn to_version_for_tool<'a, T>(
+        &self,
+        available_versions: T,
+        config: &crate::config::FjmConfig,
+        tool: ToolKind,
+    ) -> Option<&'a Version>
+    where
+        T: IntoIterator<Item = &'a Version>,
+    {
         available_versions
             .into_iter()
-            .filter(|x| self.matches(x, config))
+            .filter(|x| self.matches(x, config, tool))
             .max()
     }
 
@@ -51,11 +68,19 @@ impl UserVersion {
         }
     }
 
-    pub fn matches(&self, version: &Version, config: &crate::config::FjmConfig) -> bool {
+    pub fn matches(
+        &self,
+        version: &Version,
+        config: &crate::config::FjmConfig,
+        tool: ToolKind,
+    ) -> bool {
         match (self, version) {
             (Self::Full(a), b) if a == b => true,
             (Self::Full(user_version), maybe_alias) => {
-                match (user_version.alias_name(), maybe_alias.find_aliases(config)) {
+                match (
+                    user_version.alias_name(),
+                    maybe_alias.find_aliases(config, tool),
+                ) {
                     (None, _) | (_, Err(_)) => false,
                     (Some(user_alias), Ok(aliases)) => {
                         aliases.iter().any(|alias| alias.name() == user_alias)
@@ -103,8 +128,14 @@ fn skip_first_v(str: &str) -> &str {
 
 impl FromStr for UserVersion {
     type Err = crate::version::Error;
+    /// Parses against [`ToolKind::Java`]'s rules — `clap`'s `FromStr`-based
+    /// arg parsing runs before a `--tool` flag on the same command line can
+    /// be consulted, so this can't know the target tool at parse time. This
+    /// only matters for the JDK-only LTS/legacy-format branches: an ordinary
+    /// semver-shaped version string (what Maven versions look like) parses
+    /// identically either way.
     fn from_str(s: &str) -> Result<UserVersion, Self::Err> {
-        match Version::parse(s) {
+        match Version::parse(s, ToolKind::Java) {
             Ok(v) => Ok(Self::Full(v)),
             Err(e @ crate::version::Error::LegacyFormatNotSupported) => Err(e),
             Err(e) => {
@@ -157,12 +188,12 @@ mod tests {
 
     #[test]
     fn test_major_to_version() {
-        let expected = Version::parse("6.1.0").unwrap();
+        let expected = Version::parse("6.1.0", ToolKind::Java).unwrap();
         let versions = vec![
-            Version::parse("6.0.0").unwrap(),
-            Version::parse("6.0.1").unwrap(),
+            Version::parse("6.0.0", ToolKind::Java).unwrap(),
+            Version::parse("6.0.1", ToolKind::Java).unwrap(),
             expected.clone(),
-            Version::parse("7.0.1").unwrap(),
+            Version::parse("7.0.1", ToolKind::Java).unwrap(),
         ];
         let result = UserVersion::OnlyMajor(6).to_version(&versions, &FjmConfig::default());
 
@@ -171,12 +202,12 @@ mod tests {
 
     #[test]
     fn test_major_minor_to_version() {
-        let expected = Version::parse("6.0.1").unwrap();
+        let expected = Version::parse("6.0.1", ToolKind::Java).unwrap();
         let versions = vec![
-            Version::parse("6.0.0").unwrap(),
-            Version::parse("6.1.0").unwrap(),
+            Version::parse("6.0.0", ToolKind::Java).unwrap(),
+            Version::parse("6.1.0", ToolKind::Java).unwrap(),
             expected.clone(),
-            Version::parse("7.0.1").unwrap(),
+            Version::parse("7.0.1", ToolKind::Java).unwrap(),
         ];
         let result = UserVersion::MajorMinor(6, 0).to_version(&versions, &FjmConfig::default());
 
@@ -194,12 +225,12 @@ mod tests {
 
     #[test]
     fn test_semver_to_version() {
-        let expected = Version::parse("6.0.0").unwrap();
+        let expected = Version::parse("6.0.0", ToolKind::Java).unwrap();
         let versions = vec![
             expected.clone(),
-            Version::parse("6.1.0").unwrap(),
-            Version::parse("6.0.1").unwrap(),
-            Version::parse("7.0.1").unwrap(),
+            Version::parse("6.1.0", ToolKind::Java).unwrap(),
+            Version::parse("6.0.1", ToolKind::Java).unwrap(),
+            Version::parse("7.0.1", ToolKind::Java).unwrap(),
         ];
         let result =
             UserVersion::Full(expected.clone()).to_version(&versions, &FjmConfig::default());

@@ -5,8 +5,8 @@ exports[`Bash uninstalls a version: Bash 1`] = `
 fjm alias 17.0.2 hello
 ((fjm ls) | grep 17.0.2 || (echo "Expected output to contain 17.0.2" && exit 1)) | grep hello || (echo "Expected output to contain hello" && exit 1)
 fjm uni hello
-if [ "$(fjm ls)" != '* system' ]; then
-  echo "Expected fjm ls to be '* system'. Got $(fjm ls)"
+if [ "$(fjm ls --tool java)" != '* system' ]; then
+  echo "Expected fjm ls to be '* system'. Got $(fjm ls --tool java)"
   exit 1
 fi"
 `;
@@ -15,7 +15,7 @@ exports[`Fish uninstalls a version: Fish 1`] = `
 "fjm alias 17.0.2 hello
 begin; begin; fjm ls; end | grep 17.0.2; or echo "Expected output to contain 17.0.2" && exit 1; end | grep hello; or echo "Expected output to contain hello" && exit 1
 fjm uni hello
-set ____test____ (fjm ls)
+set ____test____ (fjm ls --tool java)
 if test "$____test____" != '* system'
   echo "Expected fjm ls to be '* system'. Got $____test____"
   exit 1
@@ -27,7 +27,7 @@ exports[`PowerShell uninstalls a version: PowerShell 1`] = `
 fjm alias 17.0.2 hello
 $($__out__ = $($($__out__ = $(fjm ls | Select-String 17.0.2); if ($__out__ -eq $null) { exit 1 } else { $__out__ }) | Select-String hello); if ($__out__ -eq $null) { exit 1 } else { $__out__ })
 fjm uni hello
-if ( "$(fjm ls)" -ne '* system' ) { echo "Expected fjm ls to be '* system'. Got $(fjm ls)"; exit 1 }"
+if ( "$(fjm ls --tool java)" -ne '* system' ) { echo "Expected fjm ls to be '* system'. Got $(fjm ls --tool java)"; exit 1 }"
 `;
 
 exports[`Zsh uninstalls a version: Zsh 1`] = `
@@ -35,8 +35,8 @@ exports[`Zsh uninstalls a version: Zsh 1`] = `
 fjm alias 17.0.2 hello
 ((fjm ls) | grep 17.0.2 || (echo "Expected output to contain 17.0.2" && exit 1)) | grep hello || (echo "Expected output to contain hello" && exit 1)
 fjm uni hello
-if [ "$(fjm ls)" != '* system' ]; then
-  echo "Expected fjm ls to be '* system'. Got $(fjm ls)"
+if [ "$(fjm ls --tool java)" != '* system' ]; then
+  echo "Expected fjm ls to be '* system'. Got $(fjm ls --tool java)"
   exit 1
 fi"
 `;

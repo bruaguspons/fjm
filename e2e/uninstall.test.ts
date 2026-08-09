@@ -18,7 +18,7 @@ for (const shell of [Bash, Zsh, Fish, PowerShell]) {
         .then(shell.call("fjm", ["uni", "hello"]))
         .then(
           shell.hasCommandOutput(
-            shell.call("fjm", ["ls"]),
+            shell.call("fjm", ["ls", "--tool", "java"]),
             "* system",
             "fjm ls",
           ),

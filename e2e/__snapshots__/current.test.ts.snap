@@ -3,86 +3,121 @@
 exports[`Bash current returns the current JDK version set in fjm: Bash 1`] = `
 "set -e
 eval "$(fjm env)"
-if [ "$(fjm current)" != 'none' ]; then
-  echo "Expected currently activated version to be 'none'. Got $(fjm current)"
+if [ "$(fjm current --tool java)" != 'none' ]; then
+  echo "Expected currently activated version to be 'none'. Got $(fjm current --tool java)"
   exit 1
 fi
 fjm use 17.0.2
-if [ "$(fjm current)" != 'v17.0.2' ]; then
-  echo "Expected currently activated version to be 'v17.0.2'. Got $(fjm current)"
+if [ "$(fjm current --tool java)" != 'v17.0.2' ]; then
+  echo "Expected currently activated version to be 'v17.0.2'. Got $(fjm current --tool java)"
   exit 1
 fi
 fjm use 21.0.1
-if [ "$(fjm current)" != 'v21.0.1' ]; then
-  echo "Expected currently activated version to be 'v21.0.1'. Got $(fjm current)"
+if [ "$(fjm current --tool java)" != 'v21.0.1' ]; then
+  echo "Expected currently activated version to be 'v21.0.1'. Got $(fjm current --tool java)"
   exit 1
 fi
 fjm use system
-if [ "$(fjm current)" != 'system' ]; then
-  echo "Expected currently activated version to be 'system'. Got $(fjm current)"
+if [ "$(fjm current --tool java)" != 'system' ]; then
+  echo "Expected currently activated version to be 'system'. Got $(fjm current --tool java)"
   exit 1
 fi"
 `;
 
+exports[`Bash current with no --tool shows every tool: Bash 1`] = `
+"set -e
+eval "$(fjm env)"
+fjm use 17.0.2
+(fjm current) | grep java: || (echo "Expected output to contain java:" && exit 1)
+(fjm current) | grep v17.0.2 || (echo "Expected output to contain v17.0.2" && exit 1)
+(fjm current) | grep maven: || (echo "Expected output to contain maven:" && exit 1)"
+`;
+
 exports[`Fish current returns the current JDK version set in fjm: Fish 1`] = `
 "fjm env | source
-set ____test____ (fjm current)
+set ____test____ (fjm current --tool java)
 if test "$____test____" != 'none'
   echo "Expected currently activated version to be 'none'. Got $____test____"
   exit 1
 end
 fjm use 17.0.2
-set ____test____ (fjm current)
+set ____test____ (fjm current --tool java)
 if test "$____test____" != 'v17.0.2'
   echo "Expected currently activated version to be 'v17.0.2'. Got $____test____"
   exit 1
 end
 fjm use 21.0.1
-set ____test____ (fjm current)
+set ____test____ (fjm current --tool java)
 if test "$____test____" != 'v21.0.1'
   echo "Expected currently activated version to be 'v21.0.1'. Got $____test____"
   exit 1
 end
 fjm use system
-set ____test____ (fjm current)
+set ____test____ (fjm current --tool java)
 if test "$____test____" != 'system'
   echo "Expected currently activated version to be 'system'. Got $____test____"
   exit 1
 end"
 `;
 
+exports[`Fish current with no --tool shows every tool: Fish 1`] = `
+"fjm env | source
+fjm use 17.0.2
+begin; fjm current; end | grep java:; or echo "Expected output to contain java:" && exit 1
+begin; fjm current; end | grep v17.0.2; or echo "Expected output to contain v17.0.2" && exit 1
+begin; fjm current; end | grep maven:; or echo "Expected output to contain maven:" && exit 1"
+`;
+
 exports[`PowerShell current returns the current JDK version set in fjm: PowerShell 1`] = `
 "$ErrorActionPreference = "Stop"
 fjm env | Out-String | Invoke-Expression
-if ( "$(fjm current)" -ne 'none' ) { echo "Expected currently activated version to be 'none'. Got $(fjm current)"; exit 1 }
+if ( "$(fjm current --tool java)" -ne 'none' ) { echo "Expected currently activated version to be 'none'. Got $(fjm current --tool java)"; exit 1 }
 fjm use 17.0.2
-if ( "$(fjm current)" -ne 'v17.0.2' ) { echo "Expected currently activated version to be 'v17.0.2'. Got $(fjm current)"; exit 1 }
+if ( "$(fjm current --tool java)" -ne 'v17.0.2' ) { echo "Expected currently activated version to be 'v17.0.2'. Got $(fjm current --tool java)"; exit 1 }
 fjm use 21.0.1
-if ( "$(fjm current)" -ne 'v21.0.1' ) { echo "Expected currently activated version to be 'v21.0.1'. Got $(fjm current)"; exit 1 }
+if ( "$(fjm current --tool java)" -ne 'v21.0.1' ) { echo "Expected currently activated version to be 'v21.0.1'. Got $(fjm current --tool java)"; exit 1 }
 fjm use system
-if ( "$(fjm current)" -ne 'system' ) { echo "Expected currently activated version to be 'system'. Got $(fjm current)"; exit 1 }"
+if ( "$(fjm current --tool java)" -ne 'system' ) { echo "Expected currently activated version to be 'system'. Got $(fjm current --tool java)"; exit 1 }"
+`;
+
+exports[`PowerShell current with no --tool shows every tool: PowerShell 1`] = `
+"$ErrorActionPreference = "Stop"
+fjm env | Out-String | Invoke-Expression
+fjm use 17.0.2
+$($__out__ = $(fjm current | Select-String java:); if ($__out__ -eq $null) { exit 1 } else { $__out__ })
+$($__out__ = $(fjm current | Select-String v17.0.2); if ($__out__ -eq $null) { exit 1 } else { $__out__ })
+$($__out__ = $(fjm current | Select-String maven:); if ($__out__ -eq $null) { exit 1 } else { $__out__ })"
 `;
 
 exports[`Zsh current returns the current JDK version set in fjm: Zsh 1`] = `
 "set -e
 eval "$(fjm env)"
-if [ "$(fjm current)" != 'none' ]; then
-  echo "Expected currently activated version to be 'none'. Got $(fjm current)"
+if [ "$(fjm current --tool java)" != 'none' ]; then
+  echo "Expected currently activated version to be 'none'. Got $(fjm current --tool java)"
   exit 1
 fi
 fjm use 17.0.2
-if [ "$(fjm current)" != 'v17.0.2' ]; then
-  echo "Expected currently activated version to be 'v17.0.2'. Got $(fjm current)"
+if [ "$(fjm current --tool java)" != 'v17.0.2' ]; then
+  echo "Expected currently activated version to be 'v17.0.2'. Got $(fjm current --tool java)"
   exit 1
 fi
 fjm use 21.0.1
-if [ "$(fjm current)" != 'v21.0.1' ]; then
-  echo "Expected currently activated version to be 'v21.0.1'. Got $(fjm current)"
+if [ "$(fjm current --tool java)" != 'v21.0.1' ]; then
+  echo "Expected currently activated version to be 'v21.0.1'. Got $(fjm current --tool java)"
   exit 1
 fi
 fjm use system
-if [ "$(fjm current)" != 'system' ]; then
-  echo "Expected currently activated version to be 'system'. Got $(fjm current)"
+if [ "$(fjm current --tool java)" != 'system' ]; then
+  echo "Expected currently activated version to be 'system'. Got $(fjm current --tool java)"
   exit 1
 fi"
+`;
+
+exports[`Zsh current with no --tool shows every tool: Zsh 1`] = `
+"set -e
+eval "$(fjm env)"
+fjm use 17.0.2
+(fjm current) | grep java: || (echo "Expected output to contain java:" && exit 1)
+(fjm current) | grep v17.0.2 || (echo "Expected output to contain v17.0.2" && exit 1)
+(fjm current) | grep maven: || (echo "Expected output to contain maven:" && exit 1)"
 `;

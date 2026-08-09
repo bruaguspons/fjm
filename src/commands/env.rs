@@ -5,6 +5,7 @@ use crate::fs::symlink_dir;
 use crate::outln;
 use crate::path_ext::PathExt;
 use crate::shell::{infer_shell, Shell, Shells};
+use crate::tool_kind::ToolKind;
 use clap::ValueEnum;
 use colored::Colorize;
 use std::collections::HashMap;
@@ -37,7 +38,10 @@ fn generate_symlink_path() -> String {
     )
 }
 
-fn make_symlink(config: &FjmConfig) -> Result<std::path::PathBuf, Error> {
+/// Creates the root multishell instance directory for this shell session.
+/// Each `ToolKind`'s activation slot lives inside it (see
+/// [`activate_default_slots`]).
+fn make_multishell_root(config: &FjmConfig) -> Result<std::path::PathBuf, Error> {
     let base_dir = config.multishell_storage().ensure_exists_silently();
     let mut temp_dir = base_dir.join(generate_symlink_path());
 
@@ -45,18 +49,51 @@ fn make_symlink(config: &FjmConfig) -> Result<std::path::PathBuf, Error> {
         temp_dir = base_dir.join(generate_symlink_path());
     }
 
-    match symlink_dir(config.default_version_dir(), &temp_dir) {
-        Ok(()) => Ok(temp_dir),
-        Err(source) => Err(Error::CantCreateSymlink { source, temp_dir }),
-    }
+    std::fs::create_dir_all(&temp_dir).map_err(|source| Error::CantCreateSymlink {
+        source,
+        temp_dir: temp_dir.clone(),
+    })?;
+    Ok(temp_dir)
 }
 
-fn set_path_for_multishell(multishell_path: &std::path::Path) {
-    let path_for_node = multishell_path.join("bin");
+/// For every `ToolKind`, activates that tool's slot by symlinking
+/// `multishell_path_for(tool)` to its `default` alias — even when that
+/// alias doesn't exist on disk yet (a dangling symlink), matching this
+/// crate's pre-existing single-slot behavior. This is deliberate: `fjm use`
+/// only ever repoints this stable slot symlink, it never needs `fjm env` to
+/// be re-evaluated, so the slot (and thus PATH) must exist from the start
+/// even before anything is installed.
+fn activate_default_slots(config: &FjmConfig) -> Result<(), Error> {
+    for &tool in ToolKind::all() {
+        let default_dir = config.default_version_dir_for(tool);
+        let Some(slot_path) = config.multishell_path_for(tool) else {
+            continue;
+        };
+        symlink_dir(default_dir, &slot_path).map_err(|source| Error::CantCreateSymlink {
+            source,
+            temp_dir: slot_path,
+        })?;
+    }
+    Ok(())
+}
 
+/// The bin directories of every tool slot, unconditionally — dangling slots
+/// (nothing installed/aliased yet for that tool) are included too, so PATH
+/// is stable across `fjm use` repointing the underlying symlink later.
+fn active_bin_paths(config: &FjmConfig) -> Vec<std::path::PathBuf> {
+    ToolKind::all()
+        .iter()
+        .filter_map(|&tool| config.multishell_path_for(tool))
+        .map(|slot| slot.join("bin"))
+        .collect()
+}
+
+fn set_path_for_multishell(bin_paths: &[std::path::PathBuf]) {
     let current_path = std::env::var_os("PATH").unwrap_or_default();
     let mut split_paths: Vec<_> = std::env::split_paths(&current_path).collect();
-    split_paths.insert(0, path_for_node);
+    for bin_path in bin_paths.iter().rev() {
+        split_paths.insert(0, bin_path.clone());
+    }
     if let Ok(new_path) = std::env::join_paths(split_paths) {
         unsafe {
             std::env::set_var("PATH", new_path);
@@ -78,26 +115,59 @@ impl Command for Env {
             );
         }
 
-        let multishell_path = make_symlink(config)?;
+        let multishell_path = make_multishell_root(config)?;
+        let config_with_multishell = config.clone().with_multishell_path(multishell_path.clone());
+        activate_default_slots(&config_with_multishell)?;
+
         let base_dir = config.base_dir_with_default();
 
-        let env_vars = [
-            ("FJM_MULTISHELL_PATH", multishell_path.to_str().unwrap()),
+        let mut env_vars = vec![
             (
-                "FJM_VERSION_FILE_STRATEGY",
-                config.version_file_strategy().as_str(),
+                "FJM_MULTISHELL_PATH".to_string(),
+                multishell_path.to_str().unwrap().to_string(),
             ),
-            ("FJM_DIR", base_dir.to_str().unwrap()),
-            ("FJM_LOGLEVEL", config.log_level().as_str()),
-            ("FJM_JDK_DIST_MIRROR", config.jdk_dist_mirror.as_str()),
-            ("FJM_ARCH", config.arch.as_str()),
+            (
+                "FJM_VERSION_FILE_STRATEGY".to_string(),
+                config.version_file_strategy().as_str().to_string(),
+            ),
+            (
+                "FJM_DIR".to_string(),
+                base_dir.to_str().unwrap().to_string(),
+            ),
+            (
+                "FJM_LOGLEVEL".to_string(),
+                config.log_level().as_str().to_string(),
+            ),
+            (
+                "FJM_JDK_DIST_MIRROR".to_string(),
+                config.jdk_dist_mirror.as_str().to_string(),
+            ),
+            (
+                "FJM_MAVEN_DIST_MIRROR".to_string(),
+                config.maven_dist_mirror.as_str().to_string(),
+            ),
+            ("FJM_ARCH".to_string(), config.arch.as_str().to_string()),
         ];
 
+        // One env var per currently-active tool slot (e.g. `JAVA_HOME`,
+        // `MAVEN_HOME`), additive to the fixed `FJM_*` vars above.
+        for &tool in ToolKind::all() {
+            if let Some(slot_path) = config_with_multishell.multishell_path_for(tool) {
+                if slot_path.exists() {
+                    env_vars.push((
+                        tool.env_var_name().to_string(),
+                        slot_path.to_str().unwrap().to_string(),
+                    ));
+                }
+            }
+        }
+
         if self.json {
-            println!(
-                "{}",
-                serde_json::to_string(&HashMap::from(env_vars)).unwrap()
-            );
+            let map: HashMap<&str, &str> = env_vars
+                .iter()
+                .map(|(k, v)| (k.as_str(), v.as_str()))
+                .collect();
+            println!("{}", serde_json::to_string(&map).unwrap());
             return Ok(());
         }
 
@@ -107,9 +177,9 @@ impl Command for Env {
             .or_else(infer_shell)
             .ok_or(Error::CantInferShell)?;
 
-        let binary_path = shell.path(&multishell_path.join("bin"));
-
-        println!("{}", binary_path?);
+        for bin_path in active_bin_paths(&config_with_multishell) {
+            println!("{}", shell.path(&bin_path)?);
+        }
 
         for (name, value) in &env_vars {
             println!("{}", shell.set_env_var(name, value));
@@ -118,11 +188,10 @@ impl Command for Env {
         if self.use_on_cd {
             // Call `use` internally for the initial directory, so the shell doesn't
             // need to spawn a subprocess after evaluating the env output.
-            set_path_for_multishell(&multishell_path);
-            let config_with_multishell =
-                config.clone().with_multishell_path(multishell_path.clone());
+            set_path_for_multishell(&active_bin_paths(&config_with_multishell));
             let use_cmd = Use {
                 version: None,
+                tool: ToolKind::Java,
                 install_if_missing: false,
                 silent_if_unchanged: true,
                 info_to_stderr: true,

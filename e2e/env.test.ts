@@ -26,6 +26,7 @@ for (const shell of [Bash, Zsh, Fish, PowerShell, WinCmd]) {
           FJM_LOGLEVEL: "info",
           FJM_MULTISHELL_PATH: expect.any(String),
           FJM_JDK_DIST_MIRROR: expect.any(String),
+          FJM_MAVEN_DIST_MIRROR: expect.any(String),
           FJM_VERSION_FILE_STRATEGY: "local",
         })
       }

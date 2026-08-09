@@ -8,6 +8,80 @@ import { buildTarGz, buildZip } from "./archives.mjs"
 import { getCompiledStubPath } from "../../e2e/shellcode/java-stub-compiler.mjs"
 
 /**
+ * Fixture Maven Central-shaped endpoints, alongside the Adoptium ones below:
+ * `GET /org/apache/maven/apache-maven/maven-metadata.xml` (used by `fjm
+ * ls-remote --tool maven`/`fjm install --tool maven <version>` to resolve
+ * `latest`/major-only requests) and
+ * `GET /org/apache/maven/apache-maven/:version/apache-maven-:version-bin.{tar.gz,zip}`
+ * plus its `.sha512` sidecar (used by the actual download/checksum step —
+ * see `src/remote_maven_index.rs`/`src/downloader.rs`'s `ChecksumSource::Sidecar`).
+ */
+const MAVEN_FIXTURE_VERSIONS = ["3.8.8", "3.9.9"]
+
+/** @param {string} version */
+function mavenArchiveName(version) {
+  return process.platform === "win32"
+    ? `apache-maven-${version}-bin.zip`
+    : `apache-maven-${version}-bin.tar.gz`
+}
+
+/** @param {string} version */
+async function buildMavenArchive(version) {
+  const dirName = `apache-maven-${version}`
+  const versionLine = `Apache Maven ${version}`
+
+  if (process.platform === "win32") {
+    const stubExePath = await getCompiledStubPath()
+    return buildZip([
+      { name: `${dirName}/bin/mvn.exe`, content: readFileSync(stubExePath) },
+      {
+        name: `${dirName}/bin/stub-output.txt`,
+        content: Buffer.from(`${versionLine}\n`, "utf-8"),
+      },
+    ])
+  }
+
+  return buildTarGz([
+    {
+      name: `${dirName}/bin/mvn`,
+      content: Buffer.from(`#!/bin/sh\necho '${versionLine}'\n`, "utf-8"),
+      executable: true,
+    },
+  ])
+}
+
+/** @type {Map<string, Buffer>} */
+const MAVEN_ARCHIVES = new Map()
+
+export async function mavenReady() {
+  for (const [version, bytes] of await Promise.all(
+    MAVEN_FIXTURE_VERSIONS.map(async (version) => [version, await buildMavenArchive(version)]),
+  )) {
+    MAVEN_ARCHIVES.set(version, bytes)
+  }
+}
+
+function mavenMetadataBody() {
+  const versionsXml = MAVEN_FIXTURE_VERSIONS.map((v) => `      <version>${v}</version>`).join(
+    "\n",
+  )
+  const latest = MAVEN_FIXTURE_VERSIONS[MAVEN_FIXTURE_VERSIONS.length - 1]
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<metadata>
+  <groupId>org.apache.maven</groupId>
+  <artifactId>apache-maven</artifactId>
+  <versioning>
+    <latest>${latest}</latest>
+    <release>${latest}</release>
+    <versions>
+${versionsXml}
+    </versions>
+    <lastUpdated>20241030090000</lastUpdated>
+  </versioning>
+</metadata>`
+}
+
+/**
  * Real-shaped Adoptium/Temurin API v3 fixture server used by the e2e suite.
  *
  * Serves `/v3/info/available_releases`,
@@ -90,6 +164,7 @@ export async function ready() {
   )) {
     ARCHIVES.set(major, archive)
   }
+  await mavenReady()
 }
 
 function availableReleasesBody() {
@@ -228,6 +303,38 @@ export const server = createServer((req, res) => {
       console.log(chalk.green.dim(`[proxy] serving archive bytes for major ${major}`))
       res.writeHead(200, { "content-type": "application/octet-stream" })
       res.end(archive.bytes)
+      return
+    }
+  }
+
+  if (pathname === "/org/apache/maven/apache-maven/maven-metadata.xml") {
+    console.log(chalk.green.dim(`[proxy] serving maven-metadata.xml fixture`))
+    res.writeHead(200, { "content-type": "application/xml" })
+    res.end(mavenMetadataBody())
+    return
+  }
+
+  const mavenArtifactMatch = pathname.match(
+    /^\/org\/apache\/maven\/apache-maven\/([^/]+)\/apache-maven-[^/]+-bin\.(tar\.gz|zip)(\.sha512)?$/,
+  )
+  if (mavenArtifactMatch) {
+    const version = mavenArtifactMatch[1]
+    const isSidecar = Boolean(mavenArtifactMatch[3])
+    const bytes = MAVEN_ARCHIVES.get(version)
+    const expectedName = mavenArchiveName(version)
+
+    if (bytes && pathname.includes(expectedName)) {
+      if (isSidecar) {
+        const digest = crypto.createHash("sha512").update(bytes).digest("hex")
+        console.log(chalk.green.dim(`[proxy] serving maven .sha512 sidecar for ${version}`))
+        res.writeHead(200, { "content-type": "text/plain" })
+        res.end(digest)
+        return
+      }
+
+      console.log(chalk.green.dim(`[proxy] serving maven archive bytes for ${version}`))
+      res.writeHead(200, { "content-type": "application/octet-stream" })
+      res.end(bytes)
       return
     }
   }

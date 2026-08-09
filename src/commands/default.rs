@@ -2,11 +2,16 @@ use super::alias::Alias;
 use super::command::Command;
 use crate::alias::get_alias_by_name;
 use crate::config::FjmConfig;
+use crate::tool_kind::ToolKind;
 use crate::user_version::UserVersion;
 
 #[derive(clap::Parser, Debug)]
 pub struct Default {
     version: Option<UserVersion>,
+
+    /// Which tool to set/read the default version for.
+    #[clap(long, value_enum, default_value_t)]
+    tool: ToolKind,
 }
 
 impl Command for Default {
@@ -17,9 +22,10 @@ impl Command for Default {
             Some(version) => Alias {
                 name: "default".into(),
                 to_version: version,
+                tool: self.tool,
             }
             .apply(config),
-            None => match get_alias_by_name(config, "default") {
+            None => match get_alias_by_name(config, "default", self.tool) {
                 Some(alias) => {
                     println!("{}", alias.s_ver());
                     Ok(())

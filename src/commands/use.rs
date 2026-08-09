@@ -1,11 +1,12 @@
 use super::command::Command;
 use super::install::Install;
-use crate::current_version::current_version;
+use crate::current_version::current_version_for;
 use crate::fs;
 use crate::installed_versions;
 use crate::outln;
 use crate::shell;
 use crate::system_version;
+use crate::tool_kind::ToolKind;
 use crate::user_version::UserVersion;
 use crate::version::Version;
 use crate::version_file_strategy::VersionFileStrategy;
@@ -17,6 +18,11 @@ use thiserror::Error;
 #[derive(clap::Parser, Debug)]
 pub struct Use {
     pub version: Option<UserVersionReader>,
+
+    /// Which tool's activation slot to target.
+    #[clap(long, value_enum, default_value_t)]
+    pub tool: ToolKind,
+
     /// Install the version if it isn't installed yet
     #[clap(long)]
     pub install_if_missing: bool,
@@ -35,18 +41,22 @@ impl Command for Use {
     type Error = Error;
 
     fn apply(self, config: &FjmConfig) -> Result<(), Self::Error> {
-        let multishell_path = config.multishell_path().ok_or(Error::FjmEnvWasNotSourced)?;
-        warn_if_multishell_path_not_in_path_env_var(multishell_path, config);
+        let tool = self.tool;
+        let multishell_path = config
+            .multishell_path_for(tool)
+            .ok_or(Error::FjmEnvWasNotSourced)?;
+        warn_if_multishell_path_not_in_path_env_var(tool, &multishell_path, config);
 
-        let all_versions = installed_versions::list(config.installations_dir())
-            .map_err(|source| Error::VersionListingError { source })?;
+        let all_versions =
+            installed_versions::list_for_tool(config.installations_dir_for(tool), tool)
+                .map_err(|source| Error::VersionListingError { source })?;
         let requested_version = self
             .version
             .unwrap_or_else(|| {
                 let current_dir = std::env::current_dir().unwrap();
                 UserVersionReader::Path(current_dir)
             })
-            .into_user_version(config)
+            .into_user_version_for_tool(config, tool)
             .ok_or_else(|| match config.version_file_strategy() {
                 VersionFileStrategy::Local => InferVersionError::Local,
                 VersionFileStrategy::Recursive => InferVersionError::Recursive,
@@ -68,7 +78,7 @@ impl Command for Use {
             );
             (message, system_version::path())
         } else if let Some(alias_name) = requested_version.alias_name() {
-            let alias_path = config.aliases_dir().join(&alias_name);
+            let alias_path = config.aliases_dir_for(tool).join(&alias_name);
             let system_path = system_version::path();
             if matches!(fs::shallow_read_symlink(&alias_path), Ok(shallow_path) if shallow_path == system_path)
             {
@@ -78,28 +88,29 @@ impl Command for Use {
                 );
                 (message, system_path)
             } else if alias_path.exists() {
-                let message = format!("Using JDK for alias {}", alias_name.cyan());
+                let message = format!("Using {} for alias {}", tool, alias_name.cyan());
                 (message, alias_path)
             } else {
-                install_new_version(requested_version, config, self.install_if_missing)?;
+                install_new_version(requested_version, config, tool, self.install_if_missing)?;
                 return Ok(());
             }
         } else {
-            let current_version = requested_version.to_version(&all_versions, config);
+            let current_version =
+                requested_version.to_version_for_tool(&all_versions, config, tool);
             if let Some(version) = current_version {
                 let version_path = config
-                    .installations_dir()
+                    .installations_dir_for(tool)
                     .join(version.to_string())
                     .join("installation");
-                let message = format!("Using JDK {}", version.to_string().cyan());
+                let message = format!("Using {} {}", tool, version.to_string().cyan());
                 (message, version_path)
             } else {
-                install_new_version(requested_version, config, self.install_if_missing)?;
+                install_new_version(requested_version, config, tool, self.install_if_missing)?;
                 return Ok(());
             }
         };
 
-        if !self.silent_if_unchanged || will_version_change(&version_path, config) {
+        if !self.silent_if_unchanged || will_version_change(&version_path, config, tool) {
             if self.info_to_stderr {
                 outln!(config, Error, "{}", message);
             } else {
@@ -115,17 +126,17 @@ impl Command for Use {
             })?;
         }
 
-        replace_symlink(&version_path, multishell_path)
+        replace_symlink(&version_path, &multishell_path)
             .map_err(|source| Error::SymlinkingCreationIssue { source })?;
 
         Ok(())
     }
 }
 
-fn will_version_change(resolved_path: &Path, config: &FjmConfig) -> bool {
-    let current_version_path = current_version(config)
+fn will_version_change(resolved_path: &Path, config: &FjmConfig, tool: ToolKind) -> bool {
+    let current_version_path = current_version_for(config, tool)
         .unwrap_or(None)
-        .map(|v| v.installation_path(config));
+        .map(|v| v.installation_path(config, tool));
 
     current_version_path.as_deref() != Some(resolved_path)
 }
@@ -133,6 +144,7 @@ fn will_version_change(resolved_path: &Path, config: &FjmConfig) -> bool {
 fn install_new_version(
     requested_version: UserVersion,
     config: &FjmConfig,
+    tool: ToolKind,
     install_if_missing: bool,
 ) -> Result<(), Error> {
     if !install_if_missing && !should_install_interactively(&requested_version) {
@@ -143,6 +155,7 @@ fn install_new_version(
 
     Install {
         version: Some(requested_version.clone()),
+        tool,
         ..Install::default()
     }
     .apply(config)
@@ -150,6 +163,7 @@ fn install_new_version(
 
     Use {
         version: Some(UserVersionReader::Direct(requested_version)),
+        tool,
         install_if_missing: true,
         silent_if_unchanged: false,
         info_to_stderr: false,
@@ -197,6 +211,7 @@ fn should_install_interactively(requested_version: &UserVersion) -> bool {
 }
 
 fn warn_if_multishell_path_not_in_path_env_var(
+    tool: ToolKind,
     multishell_path: &std::path::Path,
     config: &FjmConfig,
 ) {
@@ -217,7 +232,7 @@ fn warn_if_multishell_path_not_in_path_env_var(
         config, Error,
         "{} {}\n{}\n{}",
         "warning:".yellow().bold(),
-        "The current JDK path is not on your PATH environment variable.".yellow(),
+        format!("The current {tool} path is not on your PATH environment variable.").yellow(),
         "You should setup your shell profile to evaluate `fjm env`, see https://github.com/bruaguspons/fjm#shell-setup on how to do this".yellow(),
         "Check out our documentation for more information: https://github.com/bruaguspons/fjm".yellow()
     );

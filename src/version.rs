@@ -2,6 +2,7 @@ use crate::alias;
 use crate::config;
 use crate::lts::LtsType;
 use crate::system_version;
+use crate::tool_kind::ToolKind;
 use std::str::FromStr;
 
 #[derive(Debug, PartialEq, PartialOrd, Eq, Ord, Clone)]
@@ -45,11 +46,20 @@ pub enum Error {
 }
 
 impl Version {
-    pub fn parse<S: AsRef<str>>(version_str: S) -> Result<Self, Error> {
+    /// Parses a user- or index-supplied version string for `tool`.
+    ///
+    /// The JDK-only rules (LTS selectors, rejection of the legacy
+    /// `1.8.0_311`-style update format) only apply when `tool` is
+    /// [`ToolKind::Java`] — Maven has no LTS concept and no legacy update
+    /// format, so those branches are skipped and Maven version strings (e.g.
+    /// `3.9.9`) pass straight through to the semver parser.
+    pub fn parse<S: AsRef<str>>(version_str: S, tool: ToolKind) -> Result<Self, Error> {
         let lowercased = version_str.as_ref().to_lowercase();
         if lowercased == system_version::display_name() {
             Ok(Self::Bypassed)
-        } else if lowercased.starts_with("lts-") || lowercased.starts_with("lts/") {
+        } else if tool == ToolKind::Java
+            && (lowercased.starts_with("lts-") || lowercased.starts_with("lts/"))
+        {
             let lts_str = &lowercased[4..];
             let lts_type = lts_str
                 .parse::<LtsType>()
@@ -57,7 +67,7 @@ impl Version {
             Ok(Self::Lts(lts_type))
         } else if first_letter_is_number(lowercased.trim_start_matches('v')) {
             let version_plain = lowercased.trim_start_matches('v');
-            if is_legacy_update_format(version_plain) {
+            if tool == ToolKind::Java && is_legacy_update_format(version_plain) {
                 return Err(Error::LegacyFormatNotSupported);
             }
             let sver = node_semver::Version::parse(version_plain)?;
@@ -77,8 +87,9 @@ impl Version {
     pub fn find_aliases(
         &self,
         config: &config::FjmConfig,
+        tool: ToolKind,
     ) -> std::io::Result<Vec<alias::StoredAlias>> {
-        let aliases = alias::list_aliases(config)?
+        let aliases = alias::list_aliases(config, tool)?
             .drain(..)
             .filter(|alias| alias.s_ver() == self.v_str())
             .collect();
@@ -89,21 +100,29 @@ impl Version {
         format!("{self}")
     }
 
-    pub fn installation_path(&self, config: &config::FjmConfig) -> std::path::PathBuf {
+    pub fn installation_path(
+        &self,
+        config: &config::FjmConfig,
+        tool: ToolKind,
+    ) -> std::path::PathBuf {
         match self {
             Self::Bypassed => system_version::path(),
             v @ (Self::Lts(_) | Self::Alias(_) | Self::Latest) => {
-                config.aliases_dir().join(v.alias_name().unwrap())
+                config.aliases_dir_for(tool).join(v.alias_name().unwrap())
             }
             v @ Self::Semver(_) => config
-                .installations_dir()
+                .installations_dir_for(tool)
                 .join(v.v_str())
                 .join("installation"),
         }
     }
 
-    pub fn root_path(&self, config: &config::FjmConfig) -> Option<std::path::PathBuf> {
-        let path = self.installation_path(config);
+    pub fn root_path(
+        &self,
+        config: &config::FjmConfig,
+        tool: ToolKind,
+    ) -> Option<std::path::PathBuf> {
+        let path = self.installation_path(config, tool);
         let mut canon_path = path.canonicalize().ok()?;
         canon_path.pop();
         Some(canon_path)
@@ -119,7 +138,7 @@ impl<'de> serde::Deserialize<'de> for Version {
         D: serde::Deserializer<'de>,
     {
         let version_str = String::deserialize(deserializer)?;
-        Version::parse(version_str).map_err(serde::de::Error::custom)
+        Version::parse(version_str, ToolKind::Java).map_err(serde::de::Error::custom)
     }
 }
 
@@ -137,8 +156,11 @@ impl std::fmt::Display for Version {
 
 impl FromStr for Version {
     type Err = Error;
+    /// Defaults to [`ToolKind::Java`] — `java` is the transitional implicit
+    /// default tool, and `FromStr` has no way to receive a tool context.
+    /// Callers that know their tool should call [`Version::parse`] directly.
     fn from_str(s: &str) -> Result<Version, Self::Err> {
-        Self::parse(s)
+        Self::parse(s, ToolKind::Java)
     }
 }
 
@@ -158,20 +180,23 @@ mod tests {
     #[test]
     fn test_legacy_format_is_not_supported() {
         assert!(matches!(
-            Version::parse("1.8.0_311"),
+            Version::parse("1.8.0_311", ToolKind::Java),
             Err(Error::LegacyFormatNotSupported)
         ));
     }
 
     #[test]
     fn test_modern_jdk_version_still_parses() {
-        assert!(matches!(Version::parse("17.0.2"), Ok(Version::Semver(_))));
+        assert!(matches!(
+            Version::parse("17.0.2", ToolKind::Java),
+            Ok(Version::Semver(_))
+        ));
     }
 
     #[test]
     fn test_non_numeric_lts_is_a_hard_parse_error() {
         assert!(matches!(
-            Version::parse("lts-jod"),
+            Version::parse("lts-jod", ToolKind::Java),
             Err(Error::InvalidLtsMajor(s)) if s == "jod"
         ));
     }
@@ -179,7 +204,7 @@ mod tests {
     #[test]
     fn test_numeric_lts_parses_into_major() {
         assert!(matches!(
-            Version::parse("lts-17"),
+            Version::parse("lts-17", ToolKind::Java),
             Ok(Version::Lts(LtsType::Major(17)))
         ));
     }
@@ -187,8 +212,38 @@ mod tests {
     #[test]
     fn test_bare_lts_latest_parses() {
         assert!(matches!(
-            Version::parse("lts-latest"),
+            Version::parse("lts-latest", ToolKind::Java),
             Ok(Version::Lts(LtsType::Latest))
+        ));
+    }
+
+    #[test]
+    fn test_maven_rejects_lts_selector_as_a_literal_alias() {
+        // Maven has no LTS concept: `lts-17` for Maven is just an (unusual)
+        // alias name, not a parse error and not an `LtsType`.
+        assert!(matches!(
+            Version::parse("lts-17", ToolKind::Maven),
+            Ok(Version::Alias(s)) if s == "lts-17"
+        ));
+    }
+
+    #[test]
+    fn test_maven_accepts_legacy_update_shaped_string() {
+        // The `1.8.0_311` legacy-update-format rejection is JDK-specific;
+        // for Maven, a `_`-suffixed string like this isn't a valid semver
+        // anyway, so it surfaces as a normal semver parse error, not
+        // `LegacyFormatNotSupported`.
+        assert!(!matches!(
+            Version::parse("1.8.0_311", ToolKind::Maven),
+            Err(Error::LegacyFormatNotSupported)
+        ));
+    }
+
+    #[test]
+    fn test_maven_plain_version_parses() {
+        assert!(matches!(
+            Version::parse("3.9.9", ToolKind::Maven),
+            Ok(Version::Semver(_))
         ));
     }
 }

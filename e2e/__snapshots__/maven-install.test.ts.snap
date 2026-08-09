@@ -1,0 +1,75 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Bash install --tool maven from .maven-version: Bash 1`] = `
+"set -e
+eval "$(fjm env)"
+fjm install --tool maven --use
+if [ "$(mvn --version)" != 'Apache Maven 3.9.9' ]; then
+  echo "Expected maven version to be 'Apache Maven 3.9.9'. Got $(mvn --version)"
+  exit 1
+fi"
+`;
+
+exports[`Bash install --tool maven resolves against the fixture server: Bash 1`] = `
+"set -e
+eval "$(fjm env)"
+fjm install --tool maven 3.9.9 --use
+if [ "$(mvn --version)" != 'Apache Maven 3.9.9' ]; then
+  echo "Expected maven version to be 'Apache Maven 3.9.9'. Got $(mvn --version)"
+  exit 1
+fi"
+`;
+
+exports[`Fish install --tool maven from .maven-version: Fish 1`] = `
+"fjm env | source
+fjm install --tool maven --use
+set ____test____ (mvn --version)
+if test "$____test____" != 'Apache Maven 3.9.9'
+  echo "Expected maven version to be 'Apache Maven 3.9.9'. Got $____test____"
+  exit 1
+end"
+`;
+
+exports[`Fish install --tool maven resolves against the fixture server: Fish 1`] = `
+"fjm env | source
+fjm install --tool maven 3.9.9 --use
+set ____test____ (mvn --version)
+if test "$____test____" != 'Apache Maven 3.9.9'
+  echo "Expected maven version to be 'Apache Maven 3.9.9'. Got $____test____"
+  exit 1
+end"
+`;
+
+exports[`PowerShell install --tool maven from .maven-version: PowerShell 1`] = `
+"$ErrorActionPreference = "Stop"
+fjm env | Out-String | Invoke-Expression
+fjm install --tool maven --use
+if ( "$(mvn --version)" -ne 'Apache Maven 3.9.9' ) { echo "Expected maven version to be 'Apache Maven 3.9.9'. Got $(mvn --version)"; exit 1 }"
+`;
+
+exports[`PowerShell install --tool maven resolves against the fixture server: PowerShell 1`] = `
+"$ErrorActionPreference = "Stop"
+fjm env | Out-String | Invoke-Expression
+fjm install --tool maven 3.9.9 --use
+if ( "$(mvn --version)" -ne 'Apache Maven 3.9.9' ) { echo "Expected maven version to be 'Apache Maven 3.9.9'. Got $(mvn --version)"; exit 1 }"
+`;
+
+exports[`Zsh install --tool maven from .maven-version: Zsh 1`] = `
+"set -e
+eval "$(fjm env)"
+fjm install --tool maven --use
+if [ "$(mvn --version)" != 'Apache Maven 3.9.9' ]; then
+  echo "Expected maven version to be 'Apache Maven 3.9.9'. Got $(mvn --version)"
+  exit 1
+fi"
+`;
+
+exports[`Zsh install --tool maven resolves against the fixture server: Zsh 1`] = `
+"set -e
+eval "$(fjm env)"
+fjm install --tool maven 3.9.9 --use
+if [ "$(mvn --version)" != 'Apache Maven 3.9.9' ]; then
+  echo "Expected maven version to be 'Apache Maven 3.9.9'. Got $(mvn --version)"
+  exit 1
+fi"
+`;

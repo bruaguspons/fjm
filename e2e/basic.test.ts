@@ -70,11 +70,14 @@ for (const shell of [Bash, Zsh, Fish, PowerShell, WinCmd]) {
     })
 
     test("`fjm ls` with nothing installed", async () => {
+      // `fjm ls`/`fjm list` with no `--tool` flag now lists every tool, so
+      // pin to `--tool java` here to keep asserting the single-tool output
+      // shape; see current.test.ts for a dedicated all-tools coverage test.
       await script(shell)
         .then(shell.env({}))
         .then(
           shell.hasCommandOutput(
-            shell.call("fjm", ["ls"]),
+            shell.call("fjm", ["ls", "--tool", "java"]),
             "* system",
             "fjm ls",
           ),

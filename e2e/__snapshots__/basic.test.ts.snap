@@ -13,8 +13,8 @@ fi"
 exports[`Bash \`fjm ls\` with nothing installed: Bash 1`] = `
 "set -e
 eval "$(fjm env)"
-if [ "$(fjm ls)" != '* system' ]; then
-  echo "Expected fjm ls to be '* system'. Got $(fjm ls)"
+if [ "$(fjm ls --tool java)" != '* system' ]; then
+  echo "Expected fjm ls to be '* system'. Got $(fjm ls --tool java)"
   exit 1
 fi"
 `;
@@ -71,7 +71,7 @@ end"
 
 exports[`Fish \`fjm ls\` with nothing installed: Fish 1`] = `
 "fjm env | source
-set ____test____ (fjm ls)
+set ____test____ (fjm ls --tool java)
 if test "$____test____" != '* system'
   echo "Expected fjm ls to be '* system'. Got $____test____"
   exit 1
@@ -128,7 +128,7 @@ if ( "$(java --version)" -ne 'openjdk version "17.0.2"' ) { echo "Expected java 
 exports[`PowerShell \`fjm ls\` with nothing installed: PowerShell 1`] = `
 "$ErrorActionPreference = "Stop"
 fjm env | Out-String | Invoke-Expression
-if ( "$(fjm ls)" -ne '* system' ) { echo "Expected fjm ls to be '* system'. Got $(fjm ls)"; exit 1 }"
+if ( "$(fjm ls --tool java)" -ne '* system' ) { echo "Expected fjm ls to be '* system'. Got $(fjm ls --tool java)"; exit 1 }"
 `;
 
 exports[`PowerShell install from .java-version: PowerShell 1`] = `
@@ -172,8 +172,8 @@ fi"
 exports[`Zsh \`fjm ls\` with nothing installed: Zsh 1`] = `
 "set -e
 eval "$(fjm env)"
-if [ "$(fjm ls)" != '* system' ]; then
-  echo "Expected fjm ls to be '* system'. Got $(fjm ls)"
+if [ "$(fjm ls --tool java)" != '* system' ]; then
+  echo "Expected fjm ls to be '* system'. Got $(fjm ls --tool java)"
   exit 1
 fi"
 `;

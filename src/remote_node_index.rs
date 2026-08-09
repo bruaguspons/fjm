@@ -1,4 +1,7 @@
+use crate::downloader::ChecksumSource;
 use crate::pretty_serde::DecodeError;
+use crate::remote_version_index::{RemoteVersionIndex, ResolvedAsset};
+use crate::tool_kind::ToolKind;
 use crate::version::Version;
 use serde::Deserialize;
 use std::collections::HashSet;
@@ -10,12 +13,56 @@ pub struct IndexedJdkVersion {
     pub lts: bool,
 }
 
-#[derive(Debug, Clone)]
-pub struct ResolvedAsset {
-    pub version: Version,
-    pub link: Url,
-    pub checksum: String,
-    pub name: String,
+/// Zero-sized marker implementing [`RemoteVersionIndex`] for Adoptium.
+///
+/// The real Java CLI flow (`install`/`ls-remote`) uses the richer
+/// major/LTS/exact-patch-aware free functions in this module directly, since
+/// Adoptium's resolution nuances (LTS, `--latest`, exact-patch pagination)
+/// don't reduce cleanly to the generic trait. This impl documents and
+/// type-checks the shared contract Maven's (and a future Gradle's) index
+/// module must satisfy.
+#[allow(
+    dead_code,
+    reason = "Documents the shared RemoteVersionIndex contract; not yet constructed by any CLI dispatch path, see remote_version_index.rs"
+)]
+pub struct AdoptiumIndex;
+
+impl RemoteVersionIndex for AdoptiumIndex {
+    type Error = Error;
+
+    fn list_remote(&self, config: &crate::config::FjmConfig) -> Result<Vec<Version>, Self::Error> {
+        let releases = list(config.dist_mirror_for(ToolKind::Java))?;
+        Ok(releases
+            .into_iter()
+            .filter_map(|r| {
+                node_semver::Version::parse(format!("{}.0.0", r.major))
+                    .ok()
+                    .map(Version::Semver)
+            })
+            .collect())
+    }
+
+    fn resolve_asset(
+        &self,
+        config: &crate::config::FjmConfig,
+        requested: &Version,
+    ) -> Result<ResolvedAsset, Self::Error> {
+        let major = match requested {
+            Version::Semver(v) => u32::try_from(v.major).unwrap_or_default(),
+            _ => 0,
+        };
+        let (os, arch) = crate::arch::Arch::default()
+            .adoptium_os_arch()
+            .unwrap_or(("linux", "x64"));
+        let asset = resolve_latest_asset(
+            config.dist_mirror_for(ToolKind::Java),
+            major,
+            os,
+            arch,
+            "jdk",
+        )?;
+        Ok(asset)
+    }
 }
 
 #[derive(Deserialize, Debug)]
@@ -166,7 +213,7 @@ pub fn resolve_latest_asset(
     Ok(ResolvedAsset {
         version,
         link,
-        checksum: entry.binary.package.checksum,
+        checksum: ChecksumSource::Embedded(entry.binary.package.checksum),
         name: entry.binary.package.name,
     })
 }
@@ -239,7 +286,7 @@ pub fn resolve_asset(
             return Ok(ResolvedAsset {
                 version: Version::Semver(version),
                 link,
-                checksum: binary.package.checksum,
+                checksum: ChecksumSource::Embedded(binary.package.checksum),
                 name: binary.package.name,
             });
         }

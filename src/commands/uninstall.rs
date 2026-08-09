@@ -3,9 +3,10 @@ use crate::config::FjmConfig;
 use crate::fs::remove_symlink_dir;
 use crate::installed_versions;
 use crate::outln;
+use crate::tool_kind::ToolKind;
 use crate::user_version::UserVersion;
 use crate::version::Version;
-use crate::version_files::get_user_version_for_directory;
+use crate::version_files::get_user_version_for_directory_for_tool;
 use colored::Colorize;
 use log::debug;
 use thiserror::Error;
@@ -13,19 +14,25 @@ use thiserror::Error;
 #[derive(clap::Parser, Debug)]
 pub struct Uninstall {
     version: Option<UserVersion>,
+
+    /// Which tool to uninstall a version for.
+    #[clap(long, value_enum, default_value_t)]
+    tool: ToolKind,
 }
 
 impl Command for Uninstall {
     type Error = Error;
 
     fn apply(self, config: &FjmConfig) -> Result<(), Self::Error> {
-        let all_versions = installed_versions::list(config.installations_dir())
-            .map_err(|source| Error::VersionListingError { source })?;
+        let tool = self.tool;
+        let all_versions =
+            installed_versions::list_for_tool(config.installations_dir_for(tool), tool)
+                .map_err(|source| Error::VersionListingError { source })?;
         let requested_version = self
             .version
             .or_else(|| {
                 let current_dir = std::env::current_dir().unwrap();
-                get_user_version_for_directory(current_dir, config)
+                get_user_version_for_directory_for_tool(current_dir, config, tool)
             })
             .ok_or(Error::CantInferVersion)?;
 
@@ -35,7 +42,7 @@ impl Command for Uninstall {
 
         let available_versions: Vec<&Version> = all_versions
             .iter()
-            .filter(|v| requested_version.matches(v, config))
+            .filter(|v| requested_version.matches(v, config, tool))
             .collect();
 
         if available_versions.len() >= 2 {
@@ -48,18 +55,18 @@ impl Command for Uninstall {
         }
 
         let version = requested_version
-            .to_version(&all_versions, config)
+            .to_version_for_tool(&all_versions, config, tool)
             .ok_or(Error::CantFindVersion)?;
 
-        let matching_aliases = version.find_aliases(config)?;
+        let matching_aliases = version.find_aliases(config, tool)?;
         let root_path = version
-            .root_path(config)
+            .root_path(config, tool)
             .ok_or_else(|| Error::RootPathNotFound {
                 version: version.clone(),
             })?;
 
         debug!(
-            "Removing JDK version from {root_path}",
+            "Removing {tool} version from {root_path}",
             root_path = root_path.display()
         );
         std::fs::remove_dir_all(root_path)
@@ -67,7 +74,8 @@ impl Command for Uninstall {
         outln!(
             config,
             Info,
-            "JDK version {} was removed successfully",
+            "{} version {} was removed successfully",
+            tool,
             version.v_str().cyan()
         );
 

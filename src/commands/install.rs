@@ -7,11 +7,14 @@ use crate::downloader::{install_node_dist, Error as DownloaderError};
 use crate::lts::LtsType;
 use crate::outln;
 use crate::progress::ProgressConfig;
+use crate::remote_maven_index;
 use crate::remote_node_index;
+use crate::remote_version_index::ResolvedAsset;
+use crate::tool_kind::ToolKind;
 use crate::user_version::UserVersion;
 use crate::user_version_reader::UserVersionReader;
 use crate::version::Version;
-use crate::version_files::get_user_version_for_directory;
+use crate::version_files::get_user_version_for_directory_for_tool;
 use colored::Colorize;
 use log::debug;
 use thiserror::Error;
@@ -21,7 +24,11 @@ pub struct Install {
     /// A version string. Can be a partial semver or a LTS version name by the format lts/NAME
     pub version: Option<UserVersion>,
 
-    /// Install latest LTS
+    /// Which tool to install a version for.
+    #[clap(long, value_enum, default_value_t)]
+    pub tool: ToolKind,
+
+    /// Install latest LTS (Java only)
     #[clap(long, conflicts_with_all = &["version", "latest"])]
     pub lts: bool,
 
@@ -70,100 +77,205 @@ impl Command for Install {
     type Error = Error;
 
     fn apply(self, config: &FjmConfig) -> Result<(), Self::Error> {
-        let current_dir = std::env::current_dir().unwrap();
-        let show_progress = self.progress.enabled(config);
-        let use_installed = self.r#use;
-
-        let current_version = self
-            .version()?
-            .or_else(|| get_user_version_for_directory(current_dir, config))
-            .ok_or(Error::CantInferVersion)?;
-
-        if let UserVersion::Full(v @ (Version::Bypassed | Version::Alias(_))) = &current_version {
-            return Err(Error::UninstallableVersion { version: v.clone() });
+        match self.tool {
+            ToolKind::Java => install_java(self, config),
+            ToolKind::Maven => install_maven(self, config),
         }
-
-        let available_versions = remote_node_index::list(&config.jdk_dist_mirror)
-            .map_err(|source| Error::CantListRemoteVersions { source })?;
-
-        let major = resolve_major(&current_version, &available_versions)?;
-
-        // Automatically swap Apple Silicon to x64 arch for appropriate versions.
-        let probe_version = Version::Semver(
-            node_semver::Version::parse(format!("{major}.0.0"))
-                .expect("a bare major number is always a valid semver"),
-        );
-        let safe_arch = get_safe_arch(config.arch, &probe_version);
-
-        let (os, arch) = safe_arch
-            .adoptium_os_arch()
-            .map_err(|source| Error::UnsupportedArch { source })?;
-
-        let resolved_asset = match asset_resolution_strategy(&current_version) {
-            AssetResolutionStrategy::Latest => remote_node_index::resolve_latest_asset(
-                &config.jdk_dist_mirror,
-                major,
-                os,
-                arch,
-                "jdk",
-            )
-            .map_err(|source| Error::CantResolveAsset { source })?,
-            AssetResolutionStrategy::ExactPatch(major_v, minor_v, patch_v) => {
-                remote_node_index::resolve_asset(
-                    &config.jdk_dist_mirror,
-                    major,
-                    os,
-                    arch,
-                    "jdk",
-                    Some((major_v, minor_v, patch_v)),
-                )
-                .map_err(|source| Error::CantResolveAsset { source })?
-            }
-            AssetResolutionStrategy::AnyInMajor => remote_node_index::resolve_asset(
-                &config.jdk_dist_mirror,
-                major,
-                os,
-                arch,
-                "jdk",
-                None,
-            )
-            .map_err(|source| Error::CantResolveAsset { source })?,
-        };
-
-        let version = resolved_asset.version.clone();
-
-        let version_str = format!("JDK {version}");
-        outln!(
-            config,
-            Info,
-            "Installing {} ({})",
-            version_str.cyan(),
-            safe_arch.as_str()
-        );
-
-        match install_node_dist(&resolved_asset, config.installations_dir(), show_progress) {
-            Err(err @ DownloaderError::VersionAlreadyInstalled { .. }) => {
-                outln!(config, Error, "{} {}", "warning:".bold().yellow(), err);
-            }
-            Err(source) => Err(Error::DownloadError { source })?,
-            Ok(()) => {}
-        }
-
-        if !config.default_version_dir().exists() {
-            debug!("Tagging {} as the default version", version.v_str().cyan());
-            create_alias(config, "default", &version)?;
-        }
-
-        if let Some(tagged_alias) = current_version.inferred_alias() {
-            tag_alias(config, &version, &tagged_alias)?;
-        }
-
-        if use_installed {
-            use_installed_version(&version, config)?;
-        }
-
-        Ok(())
     }
+}
+
+fn install_java(install: Install, config: &FjmConfig) -> Result<(), Error> {
+    let current_dir = std::env::current_dir().unwrap();
+    let show_progress = install.progress.enabled(config);
+    let use_installed = install.r#use;
+    let tool = ToolKind::Java;
+
+    let current_version = install
+        .version()?
+        .or_else(|| get_user_version_for_directory_for_tool(current_dir, config, tool))
+        .ok_or(Error::CantInferVersion)?;
+
+    if let UserVersion::Full(v @ (Version::Bypassed | Version::Alias(_))) = &current_version {
+        return Err(Error::UninstallableVersion { version: v.clone() });
+    }
+
+    let available_versions = remote_node_index::list(config.dist_mirror_for(tool))
+        .map_err(|source| Error::CantListRemoteVersions { source })?;
+
+    let major = resolve_major(&current_version, &available_versions)?;
+
+    // Automatically swap Apple Silicon to x64 arch for appropriate versions.
+    let probe_version = Version::Semver(
+        node_semver::Version::parse(format!("{major}.0.0"))
+            .expect("a bare major number is always a valid semver"),
+    );
+    let safe_arch = get_safe_arch(config.arch, &probe_version);
+
+    let (os, arch) = safe_arch
+        .adoptium_os_arch()
+        .map_err(|source| Error::UnsupportedArch { source })?;
+
+    let resolved_asset = match asset_resolution_strategy(&current_version) {
+        AssetResolutionStrategy::Latest => remote_node_index::resolve_latest_asset(
+            config.dist_mirror_for(tool),
+            major,
+            os,
+            arch,
+            "jdk",
+        )
+        .map_err(|source| Error::CantResolveAsset { source })?,
+        AssetResolutionStrategy::ExactPatch(major_v, minor_v, patch_v) => {
+            remote_node_index::resolve_asset(
+                config.dist_mirror_for(tool),
+                major,
+                os,
+                arch,
+                "jdk",
+                Some((major_v, minor_v, patch_v)),
+            )
+            .map_err(|source| Error::CantResolveAsset { source })?
+        }
+        AssetResolutionStrategy::AnyInMajor => remote_node_index::resolve_asset(
+            config.dist_mirror_for(tool),
+            major,
+            os,
+            arch,
+            "jdk",
+            None,
+        )
+        .map_err(|source| Error::CantResolveAsset { source })?,
+    };
+
+    let version = resolved_asset.version.clone();
+
+    let version_str = format!("JDK {version}");
+    outln!(
+        config,
+        Info,
+        "Installing {} ({})",
+        version_str.cyan(),
+        safe_arch.as_str()
+    );
+
+    install_and_alias(
+        config,
+        tool,
+        &current_version,
+        &version,
+        &resolved_asset,
+        show_progress,
+        use_installed,
+    )
+}
+
+fn install_maven(install: Install, config: &FjmConfig) -> Result<(), Error> {
+    let current_dir = std::env::current_dir().unwrap();
+    let show_progress = install.progress.enabled(config);
+    let use_installed = install.r#use;
+    let tool = ToolKind::Maven;
+
+    let current_version = install
+        .version()?
+        .or_else(|| get_user_version_for_directory_for_tool(current_dir, config, tool))
+        .ok_or(Error::CantInferVersion)?;
+
+    if let UserVersion::Full(v @ (Version::Bypassed | Version::Alias(_))) = &current_version {
+        return Err(Error::UninstallableVersion { version: v.clone() });
+    }
+
+    let requested_version_str = match &current_version {
+        UserVersion::Full(Version::Latest) => {
+            let available = remote_maven_index::list(config.dist_mirror_for(tool))
+                .map_err(|source| Error::CantListRemoteMavenVersions { source })?;
+            let picked = available.into_iter().max().ok_or(Error::CantFindLatest)?;
+            picked.v_str()
+        }
+        UserVersion::Full(Version::Semver(_)) => current_version
+            .to_string()
+            .trim_start_matches('v')
+            .to_string(),
+        UserVersion::OnlyMajor(_) | UserVersion::MajorMinor(_, _) => {
+            // Maven Central doesn't expose a major-only listing endpoint the
+            // way Adoptium does; resolve the exact matching version(s) from
+            // the full listing instead.
+            let available = remote_maven_index::list(config.dist_mirror_for(tool))
+                .map_err(|source| Error::CantListRemoteMavenVersions { source })?;
+            current_version
+                .to_version_for_tool(&available, config, tool)
+                .ok_or_else(|| Error::CantFindMavenVersion {
+                    requested_version: current_version.clone(),
+                })?
+                .v_str()
+        }
+        UserVersion::Full(Version::Lts(_)) => {
+            return Err(Error::LtsNotSupportedForMaven);
+        }
+        UserVersion::SemverRange(_) | UserVersion::Full(Version::Bypassed | Version::Alias(_)) => {
+            return Err(Error::CantFindMavenVersion {
+                requested_version: current_version.clone(),
+            });
+        }
+    };
+
+    let resolved_asset =
+        remote_maven_index::resolve_asset(config.dist_mirror_for(tool), &requested_version_str)
+            .map_err(|source| Error::CantResolveMavenAsset { source })?;
+
+    let version = resolved_asset.version.clone();
+
+    outln!(
+        config,
+        Info,
+        "Installing {}",
+        format!("Maven {version}").cyan()
+    );
+
+    install_and_alias(
+        config,
+        tool,
+        &current_version,
+        &version,
+        &resolved_asset,
+        show_progress,
+        use_installed,
+    )
+}
+
+fn install_and_alias(
+    config: &FjmConfig,
+    tool: ToolKind,
+    current_version: &UserVersion,
+    version: &Version,
+    resolved_asset: &ResolvedAsset,
+    show_progress: bool,
+    use_installed: bool,
+) -> Result<(), Error> {
+    match install_node_dist(
+        resolved_asset,
+        config.installations_dir_for(tool),
+        show_progress,
+    ) {
+        Err(err @ DownloaderError::VersionAlreadyInstalled { .. }) => {
+            outln!(config, Error, "{} {}", "warning:".bold().yellow(), err);
+        }
+        Err(source) => Err(Error::DownloadError { source })?,
+        Ok(()) => {}
+    }
+
+    if !config.default_version_dir_for(tool).exists() {
+        debug!("Tagging {} as the default version", version.v_str().cyan());
+        create_alias(config, "default", version, tool)?;
+    }
+
+    if let Some(tagged_alias) = current_version.inferred_alias() {
+        tag_alias(config, version, &tagged_alias, tool)?;
+    }
+
+    if use_installed {
+        use_installed_version(version, config, tool)?;
+    }
+
+    Ok(())
 }
 
 /// Resolves the requested version into a concrete installable JDK major.
@@ -263,23 +375,33 @@ fn resolve_major(
     }
 }
 
-fn tag_alias(config: &FjmConfig, matched_version: &Version, alias: &Version) -> Result<(), Error> {
+fn tag_alias(
+    config: &FjmConfig,
+    matched_version: &Version,
+    alias: &Version,
+    tool: ToolKind,
+) -> Result<(), Error> {
     let alias_name = alias.v_str();
     debug!(
         "Tagging {} as alias for {}",
         alias_name.cyan(),
         matched_version.v_str().cyan()
     );
-    create_alias(config, &alias_name, matched_version)?;
+    create_alias(config, &alias_name, matched_version, tool)?;
 
     Ok(())
 }
 
-fn use_installed_version(version: &Version, config: &FjmConfig) -> Result<(), Error> {
+fn use_installed_version(
+    version: &Version,
+    config: &FjmConfig,
+    tool: ToolKind,
+) -> Result<(), Error> {
     Use {
         version: Some(UserVersionReader::Direct(UserVersion::Full(
             version.clone(),
         ))),
+        tool,
         install_if_missing: false,
         silent_if_unchanged: false,
         info_to_stderr: false,
@@ -308,11 +430,18 @@ pub enum Error {
     CantInferVersion,
     #[error(transparent)]
     CantListRemoteVersions { source: remote_node_index::Error },
+    #[error(transparent)]
+    CantListRemoteMavenVersions { source: remote_maven_index::Error },
     #[error(
         "Can't find a JDK version that matches {} in remote",
         requested_version
     )]
     CantFindNodeVersion { requested_version: UserVersion },
+    #[error(
+        "Can't find a Maven version that matches {} in remote",
+        requested_version
+    )]
+    CantFindMavenVersion { requested_version: UserVersion },
     #[error("Can't find relevant LTS named {}", lts_type)]
     CantFindRelevantLts { lts_type: crate::lts::LtsType },
     #[error("Can't resolve LTS {}: {}", lts_type, source)]
@@ -320,6 +449,8 @@ pub enum Error {
         lts_type: crate::lts::LtsType,
         source: crate::lts::Error,
     },
+    #[error("Maven has no LTS concept; pass an exact version or --latest instead")]
+    LtsNotSupportedForMaven,
     #[error("Can't find any versions in the upstream version index.")]
     CantFindLatest,
     #[error("The requested version is not installable: {}", version.v_str())]
@@ -330,6 +461,8 @@ pub enum Error {
     UnsupportedArch { source: ArchError },
     #[error(transparent)]
     CantResolveAsset { source: remote_node_index::Error },
+    #[error(transparent)]
+    CantResolveMavenAsset { source: remote_maven_index::Error },
 }
 
 #[cfg(test)]
@@ -347,6 +480,7 @@ mod tests {
 
         Install {
             version: UserVersion::from_str("17").ok(),
+            tool: ToolKind::Java,
             lts: false,
             latest: false,
             progress: ProgressConfig::Never,
@@ -366,6 +500,7 @@ mod tests {
 
         Install {
             version: None,
+            tool: ToolKind::Java,
             lts: false,
             latest: true,
             progress: ProgressConfig::Never,
@@ -466,5 +601,22 @@ mod tests {
         ];
         let current = UserVersion::Full(Version::Lts(LtsType::Latest));
         assert_eq!(resolve_major(&current, &available).unwrap(), 17);
+    }
+
+    #[test]
+    fn test_maven_install_rejects_lts_selector() {
+        let base_dir = tempfile::tempdir().unwrap();
+        let config = FjmConfig::default().with_base_dir(Some(base_dir.path().to_path_buf()));
+        let err = Install {
+            version: Some(UserVersion::Full(Version::Lts(LtsType::Latest))),
+            tool: ToolKind::Maven,
+            lts: false,
+            latest: false,
+            progress: ProgressConfig::Never,
+            r#use: false,
+        }
+        .apply(&config)
+        .unwrap_err();
+        assert!(matches!(err, Error::LtsNotSupportedForMaven));
     }
 }

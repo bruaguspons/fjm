@@ -1,6 +1,7 @@
 use crate::config::FjmConfig;
+use crate::tool_kind::ToolKind;
 use crate::user_version::UserVersion;
-use crate::version_files::{get_user_version_for_directory, get_user_version_for_file};
+use crate::version_files::{get_user_version_for_directory_for_tool, get_user_version_for_file};
 use std::path::PathBuf;
 use std::str::FromStr;
 
@@ -11,11 +12,23 @@ pub enum UserVersionReader {
 }
 
 impl UserVersionReader {
+    #[allow(
+        dead_code,
+        reason = "ToolKind::Java-default convenience wrapper around into_user_version_for_tool; kept for symmetry with the rest of the tool-scoped API"
+    )]
     pub fn into_user_version(self, config: &FjmConfig) -> Option<UserVersion> {
+        self.into_user_version_for_tool(config, ToolKind::Java)
+    }
+
+    pub fn into_user_version_for_tool(
+        self,
+        config: &FjmConfig,
+        tool: ToolKind,
+    ) -> Option<UserVersion> {
         match self {
             Self::Direct(uv) => Some(uv),
             Self::Path(pathbuf) if pathbuf.is_file() => get_user_version_for_file(pathbuf, config),
-            Self::Path(pathbuf) => get_user_version_for_directory(pathbuf, config),
+            Self::Path(pathbuf) => get_user_version_for_directory_for_tool(pathbuf, config, tool),
         }
     }
 }
@@ -63,6 +76,17 @@ mod tests {
         let user_version =
             UserVersionReader::Path(pathbuf).into_user_version(&FjmConfig::default());
         assert_eq!(user_version, Some(UserVersion::OnlyMajor(14)));
+    }
+
+    #[test]
+    fn test_directory_pathbuf_to_version_for_maven_tool() {
+        let directory = TempDir::new().unwrap();
+        std::fs::write(directory.path().join(".maven-version"), "3.9").unwrap();
+        let pathbuf = directory.path().to_path_buf();
+
+        let user_version = UserVersionReader::Path(pathbuf)
+            .into_user_version_for_tool(&FjmConfig::default(), ToolKind::Maven);
+        assert_eq!(user_version, Some(UserVersion::MajorMinor(3, 9)));
     }
 
     #[test]
