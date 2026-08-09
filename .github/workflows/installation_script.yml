@@ -5,7 +5,7 @@ on:
       - .ci/install.sh
   push:
     branches:
-      - master
+      - main
     paths:
       - .ci/install.sh
 
