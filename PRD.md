@@ -74,6 +74,10 @@ Para eliminar la dependencia de sourcing y que `java` funcione en cualquier cont
 
 Esta sección debe revisarse como propuesta formal (spec/design) cuando se decida abordarla — no implica compromiso de que se vaya a implementar.
 
+## 8b. Trabajo futuro — Publicación en crates.io (fuera de alcance ahora)
+
+La distribución actual es un único script (`curl -fsSL https://raw.githubusercontent.com/bruaguspons/fjm/main/.ci/install.sh | bash`), que alcanza para esta etapa. Publicar el crate en crates.io (vía `cargo publish`, requiere `CARGO_REGISTRY_TOKEN`) queda pendiente para una etapa posterior, cuando tenga sentido ofrecer `cargo install fjm` como vía alternativa de instalación.
+
 ## 9. Métricas de éxito
 
 - Tiempo de arranque de `fjm env`/`fjm use` sub-50ms.
