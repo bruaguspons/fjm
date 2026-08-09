@@ -4,6 +4,7 @@ use crate::choose_version_for_user_input::{
     choose_version_for_user_input_for_tool, Error as ApplicableVersionError,
 };
 use crate::config::FjmConfig;
+use crate::lts_latest_selector;
 use crate::tool_kind::ToolKind;
 use crate::user_version::UserVersion;
 use thiserror::Error;
@@ -46,4 +47,9 @@ pub enum Error {
     CantUnderstandVersion { source: ApplicableVersionError },
     #[error("A default version has not been set.")]
     DefaultAliasDoesNotExist,
+    #[error(transparent)]
+    ConflictingVersionSelectors {
+        #[from]
+        source: lts_latest_selector::ConflictingVersionSelectors,
+    },
 }

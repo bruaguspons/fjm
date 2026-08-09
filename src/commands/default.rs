@@ -2,6 +2,7 @@ use super::alias::Alias;
 use super::command::Command;
 use crate::alias::get_alias_by_name;
 use crate::config::FjmConfig;
+use crate::lts_latest_selector;
 use crate::tool_kind::ToolKind;
 use crate::user_version::UserVersion;
 
@@ -12,13 +13,23 @@ pub struct Default {
     /// Which tool to set/read the default version for.
     #[clap(long, value_enum, default_value_t)]
     tool: ToolKind,
+
+    /// Set the default to the latest LTS version already installed (Java only)
+    #[clap(long, conflicts_with_all = &["version", "latest"])]
+    lts: bool,
+
+    /// Set the default to the latest version already installed
+    #[clap(long, conflicts_with_all = &["version", "lts"])]
+    latest: bool,
 }
 
 impl Command for Default {
     type Error = super::alias::Error;
 
     fn apply(self, config: &FjmConfig) -> Result<(), Self::Error> {
-        match self.version {
+        let version = lts_latest_selector::resolve(self.version, self.lts, self.latest)?;
+
+        match version {
             Some(version) => Alias {
                 name: "default".into(),
                 to_version: version,

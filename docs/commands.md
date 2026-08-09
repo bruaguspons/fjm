@@ -634,6 +634,9 @@ Options:
           [default: java]
           [possible values: java, maven]
 
+      --lts
+          Set the default to the latest LTS version already installed (Java only)
+
       --maven-dist-mirror <MAVEN_DIST_MIRROR>
           Maven Central (or a mirror) base URL override, used to resolve and download Maven distributions. Symmetric to `--jdk-dist-mirror`
 
@@ -644,6 +647,9 @@ Options:
           The root directory of fjm installations
 
           [env: FJM_DIR]
+
+      --latest
+          Set the default to the latest version already installed
 
       --log-level <LOG_LEVEL>
           The log level of fjm commands
@@ -772,6 +778,12 @@ Options:
           [default: java]
           [possible values: java, maven]
 
+      --lts
+          Run using the latest LTS version already installed (Java only)
+
+      --latest
+          Run using the latest version already installed
+
       --log-level <LOG_LEVEL>
           The log level of fjm commands
 
@@ -825,6 +837,9 @@ Options:
           [default: java]
           [possible values: java, maven]
 
+      --lts
+          Uninstall the latest LTS version already installed (Java only)
+
       --maven-dist-mirror <MAVEN_DIST_MIRROR>
           Maven Central (or a mirror) base URL override, used to resolve and download Maven distributions. Symmetric to `--jdk-dist-mirror`
 
@@ -835,6 +850,9 @@ Options:
           The root directory of fjm installations
 
           [env: FJM_DIR]
+
+      --latest
+          Uninstall the latest version already installed
 
       --log-level <LOG_LEVEL>
           The log level of fjm commands

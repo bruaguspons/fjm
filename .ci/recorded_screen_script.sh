@@ -19,7 +19,7 @@ type 'fjm --version'
 fjm --version
 
 type 'cat .java-version'
-cat .java-version
+cat .java-version || true
 
 type 'fjm install 21'
 fjm install 21

@@ -20,6 +20,7 @@ mod fs;
 mod http;
 mod installed_versions;
 mod lts;
+mod lts_latest_selector;
 mod path_ext;
 mod progress;
 mod remote_maven_index;

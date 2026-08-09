@@ -3,6 +3,7 @@ use crate::choose_version_for_user_input::{
     choose_version_for_user_input_for_tool, Error as UserInputError,
 };
 use crate::config::FjmConfig;
+use crate::lts_latest_selector;
 use crate::outln;
 use crate::tool_kind::ToolKind;
 use crate::user_version::UserVersion;
@@ -23,6 +24,12 @@ pub struct Exec {
     /// Which tool's version to resolve `--using` against.
     #[clap(long, value_enum, default_value_t)]
     tool: ToolKind,
+    /// Run using the latest LTS version already installed (Java only)
+    #[clap(long, conflicts_with_all = &["version", "latest"])]
+    lts: bool,
+    /// Run using the latest version already installed
+    #[clap(long, conflicts_with_all = &["version", "lts"])]
+    latest: bool,
     /// The command to run
     arguments: Vec<String>,
 }
@@ -48,12 +55,22 @@ impl Cmd for Exec {
             .split_first()
             .ok_or(Error::NoBinaryProvided)?;
 
-        let version = self
-            .version
-            .unwrap_or_else(|| {
+        let lts_or_latest_version = lts_latest_selector::resolve(None, self.lts, self.latest)?;
+        let version_reader = match (self.version, lts_or_latest_version) {
+            (Some(_), Some(_)) => {
+                return Err(Error::ConflictingVersionSelectors {
+                    source: lts_latest_selector::ConflictingVersionSelectors,
+                })
+            }
+            (Some(v), None) => v,
+            (None, Some(v)) => UserVersionReader::Direct(v),
+            (None, None) => {
                 let current_dir = std::env::current_dir().unwrap();
                 UserVersionReader::Path(current_dir)
-            })
+            }
+        };
+
+        let version = version_reader
             .into_user_version_for_tool(config, tool)
             .ok_or(Error::CantInferVersion)?;
 
@@ -119,4 +136,9 @@ pub enum Error {
     CantReadProcessExitCode,
     #[error("command not provided. Please provide a command to run as an argument, like {} or {}.\n{} {}", "java".italic(), "bash".italic(), "example:".yellow().bold(), "fjm exec --using=17.0.2 java --version".italic().yellow())]
     NoBinaryProvided,
+    #[error(transparent)]
+    ConflictingVersionSelectors {
+        #[from]
+        source: lts_latest_selector::ConflictingVersionSelectors,
+    },
 }

@@ -2,6 +2,7 @@ use super::command::Command;
 use crate::config::FjmConfig;
 use crate::fs::remove_symlink_dir;
 use crate::installed_versions;
+use crate::lts_latest_selector;
 use crate::outln;
 use crate::tool_kind::ToolKind;
 use crate::user_version::UserVersion;
@@ -18,6 +19,14 @@ pub struct Uninstall {
     /// Which tool to uninstall a version for.
     #[clap(long, value_enum, default_value_t)]
     tool: ToolKind,
+
+    /// Uninstall the latest LTS version already installed (Java only)
+    #[clap(long, conflicts_with_all = &["version", "latest"])]
+    lts: bool,
+
+    /// Uninstall the latest version already installed
+    #[clap(long, conflicts_with_all = &["version", "lts"])]
+    latest: bool,
 }
 
 impl Command for Uninstall {
@@ -28,8 +37,7 @@ impl Command for Uninstall {
         let all_versions =
             installed_versions::list_for_tool(config.installations_dir_for(tool), tool)
                 .map_err(|source| Error::VersionListingError { source })?;
-        let requested_version = self
-            .version
+        let requested_version = lts_latest_selector::resolve(self.version, self.lts, self.latest)?
             .or_else(|| {
                 let current_dir = std::env::current_dir().unwrap();
                 get_user_version_for_directory_for_tool(current_dir, config, tool)
@@ -113,6 +121,11 @@ pub enum Error {
     IoError {
         #[from]
         source: std::io::Error,
+    },
+    #[error(transparent)]
+    ConflictingVersionSelectors {
+        #[from]
+        source: lts_latest_selector::ConflictingVersionSelectors,
     },
     #[error("Can't delete JDK version: {}", source)]
     CantDeleteNodeVersion { source: std::io::Error },

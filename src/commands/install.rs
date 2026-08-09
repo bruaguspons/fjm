@@ -4,7 +4,9 @@ use crate::alias::create_alias;
 use crate::arch::{get_safe_arch, ArchError};
 use crate::config::FjmConfig;
 use crate::downloader::{install_node_dist, Error as DownloaderError};
+#[cfg(test)]
 use crate::lts::LtsType;
+use crate::lts_latest_selector;
 use crate::outln;
 use crate::progress::ProgressConfig;
 use crate::remote_maven_index;
@@ -49,27 +51,11 @@ pub struct Install {
 
 impl Install {
     fn version(self) -> Result<Option<UserVersion>, Error> {
-        match self {
-            Self {
-                version: v,
-                lts: false,
-                latest: false,
-                ..
-            } => Ok(v),
-            Self {
-                version: None,
-                lts: true,
-                latest: false,
-                ..
-            } => Ok(Some(UserVersion::Full(Version::Lts(LtsType::Latest)))),
-            Self {
-                version: None,
-                lts: false,
-                latest: true,
-                ..
-            } => Ok(Some(UserVersion::Full(Version::Latest))),
-            _ => Err(Error::TooManyVersionsProvided),
-        }
+        Ok(lts_latest_selector::resolve(
+            self.version,
+            self.lts,
+            self.latest,
+        )?)
     }
 }
 
@@ -457,8 +443,11 @@ pub enum Error {
     CantFindLatest,
     #[error("The requested version is not installable: {}", version.v_str())]
     UninstallableVersion { version: Version },
-    #[error("Too many versions provided. Please don't use --lts with a version string.")]
-    TooManyVersionsProvided,
+    #[error(transparent)]
+    ConflictingVersionSelectors {
+        #[from]
+        source: lts_latest_selector::ConflictingVersionSelectors,
+    },
     #[error(transparent)]
     UnsupportedArch { source: ArchError },
     #[error(transparent)]

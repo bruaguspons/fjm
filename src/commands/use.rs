@@ -3,7 +3,7 @@ use super::install::Install;
 use crate::current_version::current_version_for;
 use crate::fs;
 use crate::installed_versions;
-use crate::lts::LtsType;
+use crate::lts_latest_selector;
 use crate::outln;
 use crate::shell;
 use crate::system_version;
@@ -51,13 +51,9 @@ impl Use {
     fn version_reader(&self) -> Result<Option<UserVersionReader>, Error> {
         match (&self.version, self.lts, self.latest) {
             (v, false, false) => Ok(v.clone()),
-            (None, true, false) => Ok(Some(UserVersionReader::Direct(UserVersion::Full(
-                Version::Lts(LtsType::Latest),
-            )))),
-            (None, false, true) => Ok(Some(UserVersionReader::Direct(UserVersion::Full(
-                Version::Latest,
-            )))),
-            _ => Err(Error::TooManyVersionsProvided),
+            (None, _, _) => Ok(lts_latest_selector::resolve(None, self.lts, self.latest)?
+                .map(UserVersionReader::Direct)),
+            (Some(_), _, _) => Err(lts_latest_selector::ConflictingVersionSelectors.into()),
         }
     }
 }
@@ -275,8 +271,11 @@ pub enum Error {
     VersionListingError { source: installed_versions::Error },
     #[error("Requested version {} is not currently installed", version)]
     CantFindVersion { version: UserVersion },
-    #[error("Too many versions provided. Please don't use --lts/--latest with a version string.")]
-    TooManyVersionsProvided,
+    #[error(transparent)]
+    ConflictingVersionSelectors {
+        #[from]
+        source: lts_latest_selector::ConflictingVersionSelectors,
+    },
     #[error(transparent)]
     CantInferVersion {
         #[from]

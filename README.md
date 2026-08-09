@@ -1,10 +1,12 @@
 <h1 align="center">
   Fast Java Manager (<code>fjm</code>)
-  <img alt="Amount of downloads" src="https://img.shields.io/github/downloads/bruaguspons/fjm/total.svg?style=flat" />
-  <a href="https://github.com/bruaguspons/fjm/actions"><img src="https://img.shields.io/github/actions/workflow/status/bruaguspons/fjm/rust.yml?branch=main&label=workflow" alt="GitHub Actions workflow status" /></a>
 </h1>
 
 > 🚀 Fast and simple Java version manager, built in Rust
+
+<p align="center">
+  <img src="./docs/fjm.svg" alt="fjm demo" width="600">
+</p>
 
 ## Why fjm?
 
