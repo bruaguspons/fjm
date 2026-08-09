@@ -1,0 +1,226 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Bash aliasing versions: Bash 1`] = `
+"set -e
+eval "$(fjm env)"
+fjm alias 17.0.2 newer
+fjm alias 11.0.21 older
+fjm default older
+((fjm ls) | grep 17.0.2 || (echo "Expected output to contain 17.0.2" && exit 1)) | grep newer || (echo "Expected output to contain newer" && exit 1)
+((fjm ls) | grep 11.0.21 || (echo "Expected output to contain 11.0.21" && exit 1)) | grep older || (echo "Expected output to contain older" && exit 1)
+fjm use older
+if [ "$(java --version)" != 'openjdk version "11.0.21"' ]; then
+  echo "Expected java version to be 'openjdk version "11.0.21"'. Got $(java --version)"
+  exit 1
+fi
+fjm use newer
+if [ "$(java --version)" != 'openjdk version "17.0.2"' ]; then
+  echo "Expected java version to be 'openjdk version "17.0.2"'. Got $(java --version)"
+  exit 1
+fi
+fjm use default
+if [ "$(java --version)" != 'openjdk version "11.0.21"' ]; then
+  echo "Expected java version to be 'openjdk version "11.0.21"'. Got $(java --version)"
+  exit 1
+fi"
+`;
+
+exports[`Bash can alias the system java: Bash 1`] = `
+"set -e
+eval "$(fjm env)"
+fjm alias system my_system
+(fjm ls) | grep my_system || (echo "Expected output to contain my_system" && exit 1)
+fjm alias system default
+fjm alias my_system my_system2
+(fjm ls) | grep my_system2 || (echo "Expected output to contain my_system2" && exit 1)
+(fjm use my_system) | grep 'Bypassing fjm' || (echo "Expected output to contain 'Bypassing fjm'" && exit 1)
+fjm unalias my_system
+(fjm use my_system 2>&1) | grep 'Requested version my_system is not currently installed' || (echo "Expected output to contain 'Requested version my_system is not currently installed'" && exit 1)"
+`;
+
+exports[`Bash errors when alias is not found: Bash 1`] = `
+"set -e
+eval "$(fjm env --log-level=error)"
+(fjm use made-up-alias 2>&1) | grep 'Requested version made-up-alias is not' || (echo "Expected output to contain 'Requested version made-up-alias is not'" && exit 1)"
+`;
+
+exports[`Bash unalias a version: Bash 1`] = `
+"set -e
+eval "$(fjm env)"
+fjm alias 11.0.21 version11
+(fjm ls) | grep version11 || (echo "Expected output to contain version11" && exit 1)
+fjm unalias version11
+(fjm use version11 2>&1) | grep 'Requested version version11 is not currently installed' || (echo "Expected output to contain 'Requested version version11 is not currently installed'" && exit 1)"
+`;
+
+exports[`Bash unalias errors if alias not found: Bash 1`] = `
+"set -e
+eval "$(fjm env --log-level=error)"
+(fjm unalias lts 2>&1) | grep 'Requested alias lts not found' || (echo "Expected output to contain 'Requested alias lts not found'" && exit 1)"
+`;
+
+exports[`Fish aliasing versions: Fish 1`] = `
+"fjm env | source
+fjm alias 17.0.2 newer
+fjm alias 11.0.21 older
+fjm default older
+begin; begin; fjm ls; end | grep 17.0.2; or echo "Expected output to contain 17.0.2" && exit 1; end | grep newer; or echo "Expected output to contain newer" && exit 1
+begin; begin; fjm ls; end | grep 11.0.21; or echo "Expected output to contain 11.0.21" && exit 1; end | grep older; or echo "Expected output to contain older" && exit 1
+fjm use older
+set ____test____ (java --version)
+if test "$____test____" != 'openjdk version "11.0.21"'
+  echo "Expected java version to be 'openjdk version "11.0.21"'. Got $____test____"
+  exit 1
+end
+fjm use newer
+set ____test____ (java --version)
+if test "$____test____" != 'openjdk version "17.0.2"'
+  echo "Expected java version to be 'openjdk version "17.0.2"'. Got $____test____"
+  exit 1
+end
+fjm use default
+set ____test____ (java --version)
+if test "$____test____" != 'openjdk version "11.0.21"'
+  echo "Expected java version to be 'openjdk version "11.0.21"'. Got $____test____"
+  exit 1
+end"
+`;
+
+exports[`Fish can alias the system java: Fish 1`] = `
+"fjm env | source
+fjm alias system my_system
+begin; fjm ls; end | grep my_system; or echo "Expected output to contain my_system" && exit 1
+fjm alias system default
+fjm alias my_system my_system2
+begin; fjm ls; end | grep my_system2; or echo "Expected output to contain my_system2" && exit 1
+begin; fjm use my_system; end | grep 'Bypassing fjm'; or echo "Expected output to contain 'Bypassing fjm'" && exit 1
+fjm unalias my_system
+begin; fjm use my_system 2>&1; end | grep 'Requested version my_system is not currently installed'; or echo "Expected output to contain 'Requested version my_system is not currently installed'" && exit 1"
+`;
+
+exports[`Fish errors when alias is not found: Fish 1`] = `
+"fjm env --log-level=error | source
+begin; fjm use made-up-alias 2>&1; end | grep 'Requested version made-up-alias is not'; or echo "Expected output to contain 'Requested version made-up-alias is not'" && exit 1"
+`;
+
+exports[`Fish unalias a version: Fish 1`] = `
+"fjm env | source
+fjm alias 11.0.21 version11
+begin; fjm ls; end | grep version11; or echo "Expected output to contain version11" && exit 1
+fjm unalias version11
+begin; fjm use version11 2>&1; end | grep 'Requested version version11 is not currently installed'; or echo "Expected output to contain 'Requested version version11 is not currently installed'" && exit 1"
+`;
+
+exports[`Fish unalias errors if alias not found: Fish 1`] = `
+"fjm env --log-level=error | source
+begin; fjm unalias lts 2>&1; end | grep 'Requested alias lts not found'; or echo "Expected output to contain 'Requested alias lts not found'" && exit 1"
+`;
+
+exports[`PowerShell aliasing versions: PowerShell 1`] = `
+"$ErrorActionPreference = "Stop"
+fjm env | Out-String | Invoke-Expression
+fjm alias 17.0.2 newer
+fjm alias 11.0.21 older
+fjm default older
+$($__out__ = $($($__out__ = $(fjm ls | Select-String 17.0.2); if ($__out__ -eq $null) { exit 1 } else { $__out__ }) | Select-String newer); if ($__out__ -eq $null) { exit 1 } else { $__out__ })
+$($__out__ = $($($__out__ = $(fjm ls | Select-String 11.0.21); if ($__out__ -eq $null) { exit 1 } else { $__out__ }) | Select-String older); if ($__out__ -eq $null) { exit 1 } else { $__out__ })
+fjm use older
+if ( "$(java --version)" -ne 'openjdk version "11.0.21"' ) { echo "Expected java version to be 'openjdk version "11.0.21"'. Got $(java --version)"; exit 1 }
+fjm use newer
+if ( "$(java --version)" -ne 'openjdk version "17.0.2"' ) { echo "Expected java version to be 'openjdk version "17.0.2"'. Got $(java --version)"; exit 1 }
+fjm use default
+if ( "$(java --version)" -ne 'openjdk version "11.0.21"' ) { echo "Expected java version to be 'openjdk version "11.0.21"'. Got $(java --version)"; exit 1 }"
+`;
+
+exports[`PowerShell can alias the system java: PowerShell 1`] = `
+"$ErrorActionPreference = "Stop"
+fjm env | Out-String | Invoke-Expression
+fjm alias system my_system
+$($__out__ = $(fjm ls | Select-String my_system); if ($__out__ -eq $null) { exit 1 } else { $__out__ })
+fjm alias system default
+fjm alias my_system my_system2
+$($__out__ = $(fjm ls | Select-String my_system2); if ($__out__ -eq $null) { exit 1 } else { $__out__ })
+$($__out__ = $(fjm use my_system | Select-String 'Bypassing fjm'); if ($__out__ -eq $null) { exit 1 } else { $__out__ })
+fjm unalias my_system
+$($__out__ = $(fjm use my_system 2>&1 | Select-String 'Requested version my_system is not currently installed'); if ($__out__ -eq $null) { exit 1 } else { $__out__ })"
+`;
+
+exports[`PowerShell errors when alias is not found: PowerShell 1`] = `
+"$ErrorActionPreference = "Stop"
+fjm env --log-level=error | Out-String | Invoke-Expression
+$($__out__ = $(fjm use made-up-alias 2>&1 | Select-String 'Requested version made-up-alias is not'); if ($__out__ -eq $null) { exit 1 } else { $__out__ })"
+`;
+
+exports[`PowerShell unalias a version: PowerShell 1`] = `
+"$ErrorActionPreference = "Stop"
+fjm env | Out-String | Invoke-Expression
+fjm alias 11.0.21 version11
+$($__out__ = $(fjm ls | Select-String version11); if ($__out__ -eq $null) { exit 1 } else { $__out__ })
+fjm unalias version11
+$($__out__ = $(fjm use version11 2>&1 | Select-String 'Requested version version11 is not currently installed'); if ($__out__ -eq $null) { exit 1 } else { $__out__ })"
+`;
+
+exports[`PowerShell unalias errors if alias not found: PowerShell 1`] = `
+"$ErrorActionPreference = "Stop"
+fjm env --log-level=error | Out-String | Invoke-Expression
+$($__out__ = $(fjm unalias lts 2>&1 | Select-String 'Requested alias lts not found'); if ($__out__ -eq $null) { exit 1 } else { $__out__ })"
+`;
+
+exports[`Zsh aliasing versions: Zsh 1`] = `
+"set -e
+eval "$(fjm env)"
+fjm alias 17.0.2 newer
+fjm alias 11.0.21 older
+fjm default older
+((fjm ls) | grep 17.0.2 || (echo "Expected output to contain 17.0.2" && exit 1)) | grep newer || (echo "Expected output to contain newer" && exit 1)
+((fjm ls) | grep 11.0.21 || (echo "Expected output to contain 11.0.21" && exit 1)) | grep older || (echo "Expected output to contain older" && exit 1)
+fjm use older
+if [ "$(java --version)" != 'openjdk version "11.0.21"' ]; then
+  echo "Expected java version to be 'openjdk version "11.0.21"'. Got $(java --version)"
+  exit 1
+fi
+fjm use newer
+if [ "$(java --version)" != 'openjdk version "17.0.2"' ]; then
+  echo "Expected java version to be 'openjdk version "17.0.2"'. Got $(java --version)"
+  exit 1
+fi
+fjm use default
+if [ "$(java --version)" != 'openjdk version "11.0.21"' ]; then
+  echo "Expected java version to be 'openjdk version "11.0.21"'. Got $(java --version)"
+  exit 1
+fi"
+`;
+
+exports[`Zsh can alias the system java: Zsh 1`] = `
+"set -e
+eval "$(fjm env)"
+fjm alias system my_system
+(fjm ls) | grep my_system || (echo "Expected output to contain my_system" && exit 1)
+fjm alias system default
+fjm alias my_system my_system2
+(fjm ls) | grep my_system2 || (echo "Expected output to contain my_system2" && exit 1)
+(fjm use my_system) | grep 'Bypassing fjm' || (echo "Expected output to contain 'Bypassing fjm'" && exit 1)
+fjm unalias my_system
+(fjm use my_system 2>&1) | grep 'Requested version my_system is not currently installed' || (echo "Expected output to contain 'Requested version my_system is not currently installed'" && exit 1)"
+`;
+
+exports[`Zsh errors when alias is not found: Zsh 1`] = `
+"set -e
+eval "$(fjm env --log-level=error)"
+(fjm use made-up-alias 2>&1) | grep 'Requested version made-up-alias is not' || (echo "Expected output to contain 'Requested version made-up-alias is not'" && exit 1)"
+`;
+
+exports[`Zsh unalias a version: Zsh 1`] = `
+"set -e
+eval "$(fjm env)"
+fjm alias 11.0.21 version11
+(fjm ls) | grep version11 || (echo "Expected output to contain version11" && exit 1)
+fjm unalias version11
+(fjm use version11 2>&1) | grep 'Requested version version11 is not currently installed' || (echo "Expected output to contain 'Requested version version11 is not currently installed'" && exit 1)"
+`;
+
+exports[`Zsh unalias errors if alias not found: Zsh 1`] = `
+"set -e
+eval "$(fjm env --log-level=error)"
+(fjm unalias lts 2>&1) | grep 'Requested alias lts not found' || (echo "Expected output to contain 'Requested alias lts not found'" && exit 1)"
+`;

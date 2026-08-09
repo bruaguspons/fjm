@@ -1,0 +1,24 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Bash installing an old JDK major not present in the fixture server fails clearly: Bash 1`] = `
+"set -e
+eval "$(fjm env)"
+(fjm install 1.8.0 2>&1) | grep 'no JDK asset found for major 1' || (echo "Expected output to contain 'no JDK asset found for major 1'" && exit 1)"
+`;
+
+exports[`Fish installing an old JDK major not present in the fixture server fails clearly: Fish 1`] = `
+"fjm env | source
+begin; fjm install 1.8.0 2>&1; end | grep 'no JDK asset found for major 1'; or echo "Expected output to contain 'no JDK asset found for major 1'" && exit 1"
+`;
+
+exports[`PowerShell installing an old JDK major not present in the fixture server fails clearly: PowerShell 1`] = `
+"$ErrorActionPreference = "Stop"
+fjm env | Out-String | Invoke-Expression
+$($__out__ = $(fjm install 1.8.0 2>&1 | Select-String 'no JDK asset found for major 1'); if ($__out__ -eq $null) { exit 1 } else { $__out__ })"
+`;
+
+exports[`Zsh installing an old JDK major not present in the fixture server fails clearly: Zsh 1`] = `
+"set -e
+eval "$(fjm env)"
+(fjm install 1.8.0 2>&1) | grep 'no JDK asset found for major 1' || (echo "Expected output to contain 'no JDK asset found for major 1'" && exit 1)"
+`;

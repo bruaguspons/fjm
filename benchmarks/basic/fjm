@@ -1,0 +1,6 @@
+#!/bin/bash
+
+eval "$(fjm env --shell=bash)"
+fjm install 21
+fjm use 21
+java -version

@@ -1,0 +1,38 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Bash installing latest resolves against the fixture server: Bash 1`] = `
+"set -e
+eval "$(fjm env)"
+fjm install --latest --use
+if [ "$(java --version)" != 'openjdk version "23.0.1"' ]; then
+  echo "Expected java version to be 'openjdk version "23.0.1"'. Got $(java --version)"
+  exit 1
+fi"
+`;
+
+exports[`Fish installing latest resolves against the fixture server: Fish 1`] = `
+"fjm env | source
+fjm install --latest --use
+set ____test____ (java --version)
+if test "$____test____" != 'openjdk version "23.0.1"'
+  echo "Expected java version to be 'openjdk version "23.0.1"'. Got $____test____"
+  exit 1
+end"
+`;
+
+exports[`PowerShell installing latest resolves against the fixture server: PowerShell 1`] = `
+"$ErrorActionPreference = "Stop"
+fjm env | Out-String | Invoke-Expression
+fjm install --latest --use
+if ( "$(java --version)" -ne 'openjdk version "23.0.1"' ) { echo "Expected java version to be 'openjdk version "23.0.1"'. Got $(java --version)"; exit 1 }"
+`;
+
+exports[`Zsh installing latest resolves against the fixture server: Zsh 1`] = `
+"set -e
+eval "$(fjm env)"
+fjm install --latest --use
+if [ "$(java --version)" != 'openjdk version "23.0.1"' ]; then
+  echo "Expected java version to be 'openjdk version "23.0.1"'. Got $(java --version)"
+  exit 1
+fi"
+`;

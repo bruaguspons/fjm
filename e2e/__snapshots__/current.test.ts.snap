@@ -1,0 +1,88 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Bash current returns the current JDK version set in fjm: Bash 1`] = `
+"set -e
+eval "$(fjm env)"
+if [ "$(fjm current)" != 'none' ]; then
+  echo "Expected currently activated version to be 'none'. Got $(fjm current)"
+  exit 1
+fi
+fjm use 17.0.2
+if [ "$(fjm current)" != 'v17.0.2' ]; then
+  echo "Expected currently activated version to be 'v17.0.2'. Got $(fjm current)"
+  exit 1
+fi
+fjm use 21.0.1
+if [ "$(fjm current)" != 'v21.0.1' ]; then
+  echo "Expected currently activated version to be 'v21.0.1'. Got $(fjm current)"
+  exit 1
+fi
+fjm use system
+if [ "$(fjm current)" != 'system' ]; then
+  echo "Expected currently activated version to be 'system'. Got $(fjm current)"
+  exit 1
+fi"
+`;
+
+exports[`Fish current returns the current JDK version set in fjm: Fish 1`] = `
+"fjm env | source
+set ____test____ (fjm current)
+if test "$____test____" != 'none'
+  echo "Expected currently activated version to be 'none'. Got $____test____"
+  exit 1
+end
+fjm use 17.0.2
+set ____test____ (fjm current)
+if test "$____test____" != 'v17.0.2'
+  echo "Expected currently activated version to be 'v17.0.2'. Got $____test____"
+  exit 1
+end
+fjm use 21.0.1
+set ____test____ (fjm current)
+if test "$____test____" != 'v21.0.1'
+  echo "Expected currently activated version to be 'v21.0.1'. Got $____test____"
+  exit 1
+end
+fjm use system
+set ____test____ (fjm current)
+if test "$____test____" != 'system'
+  echo "Expected currently activated version to be 'system'. Got $____test____"
+  exit 1
+end"
+`;
+
+exports[`PowerShell current returns the current JDK version set in fjm: PowerShell 1`] = `
+"$ErrorActionPreference = "Stop"
+fjm env | Out-String | Invoke-Expression
+if ( "$(fjm current)" -ne 'none' ) { echo "Expected currently activated version to be 'none'. Got $(fjm current)"; exit 1 }
+fjm use 17.0.2
+if ( "$(fjm current)" -ne 'v17.0.2' ) { echo "Expected currently activated version to be 'v17.0.2'. Got $(fjm current)"; exit 1 }
+fjm use 21.0.1
+if ( "$(fjm current)" -ne 'v21.0.1' ) { echo "Expected currently activated version to be 'v21.0.1'. Got $(fjm current)"; exit 1 }
+fjm use system
+if ( "$(fjm current)" -ne 'system' ) { echo "Expected currently activated version to be 'system'. Got $(fjm current)"; exit 1 }"
+`;
+
+exports[`Zsh current returns the current JDK version set in fjm: Zsh 1`] = `
+"set -e
+eval "$(fjm env)"
+if [ "$(fjm current)" != 'none' ]; then
+  echo "Expected currently activated version to be 'none'. Got $(fjm current)"
+  exit 1
+fi
+fjm use 17.0.2
+if [ "$(fjm current)" != 'v17.0.2' ]; then
+  echo "Expected currently activated version to be 'v17.0.2'. Got $(fjm current)"
+  exit 1
+fi
+fjm use 21.0.1
+if [ "$(fjm current)" != 'v21.0.1' ]; then
+  echo "Expected currently activated version to be 'v21.0.1'. Got $(fjm current)"
+  exit 1
+fi
+fjm use system
+if [ "$(fjm current)" != 'system' ]; then
+  echo "Expected currently activated version to be 'system'. Got $(fjm current)"
+  exit 1
+fi"
+`;

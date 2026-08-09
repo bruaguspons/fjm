@@ -1,0 +1,127 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Bash "quiet" log level: Bash 1`] = `
+"set -e
+eval "$(fjm env --log-level=quiet)"
+if [ "$(fjm install 17.0.2)" != '' ]; then
+  echo "Expected fjm install to be ''. Got $(fjm install 17.0.2)"
+  exit 1
+fi
+if [ "$(fjm use 17.0.2)" != '' ]; then
+  echo "Expected fjm use to be ''. Got $(fjm use 17.0.2)"
+  exit 1
+fi
+if [ "$(fjm alias 17.0.2 something)" != '' ]; then
+  echo "Expected fjm alias to be ''. Got $(fjm alias 17.0.2 something)"
+  exit 1
+fi"
+`;
+
+exports[`Bash error log level: Bash 1`] = `
+"set -e
+eval "$(fjm env --log-level=error)"
+if [ "$(fjm install 17.0.2)" != '' ]; then
+  echo "Expected fjm install to be ''. Got $(fjm install 17.0.2)"
+  exit 1
+fi
+if [ "$(fjm use 17.0.2)" != '' ]; then
+  echo "Expected fjm use to be ''. Got $(fjm use 17.0.2)"
+  exit 1
+fi
+if [ "$(fjm alias 17.0.2 something)" != '' ]; then
+  echo "Expected fjm alias to be ''. Got $(fjm alias 17.0.2 something)"
+  exit 1
+fi
+(fjm alias abcd efg 2>&1) | grep "find requested version" || (echo "Expected output to contain "find requested version"" && exit 1)"
+`;
+
+exports[`Fish "quiet" log level: Fish 1`] = `
+"fjm env --log-level=quiet | source
+set ____test____ (fjm install 17.0.2)
+if test "$____test____" != ''
+  echo "Expected fjm install to be ''. Got $____test____"
+  exit 1
+end
+set ____test____ (fjm use 17.0.2)
+if test "$____test____" != ''
+  echo "Expected fjm use to be ''. Got $____test____"
+  exit 1
+end
+set ____test____ (fjm alias 17.0.2 something)
+if test "$____test____" != ''
+  echo "Expected fjm alias to be ''. Got $____test____"
+  exit 1
+end"
+`;
+
+exports[`Fish error log level: Fish 1`] = `
+"fjm env --log-level=error | source
+set ____test____ (fjm install 17.0.2)
+if test "$____test____" != ''
+  echo "Expected fjm install to be ''. Got $____test____"
+  exit 1
+end
+set ____test____ (fjm use 17.0.2)
+if test "$____test____" != ''
+  echo "Expected fjm use to be ''. Got $____test____"
+  exit 1
+end
+set ____test____ (fjm alias 17.0.2 something)
+if test "$____test____" != ''
+  echo "Expected fjm alias to be ''. Got $____test____"
+  exit 1
+end
+begin; fjm alias abcd efg 2>&1; end | grep "find requested version"; or echo "Expected output to contain "find requested version"" && exit 1"
+`;
+
+exports[`PowerShell "quiet" log level: PowerShell 1`] = `
+"$ErrorActionPreference = "Stop"
+fjm env --log-level=quiet | Out-String | Invoke-Expression
+if ( "$(fjm install 17.0.2)" -ne '' ) { echo "Expected fjm install to be ''. Got $(fjm install 17.0.2)"; exit 1 }
+if ( "$(fjm use 17.0.2)" -ne '' ) { echo "Expected fjm use to be ''. Got $(fjm use 17.0.2)"; exit 1 }
+if ( "$(fjm alias 17.0.2 something)" -ne '' ) { echo "Expected fjm alias to be ''. Got $(fjm alias 17.0.2 something)"; exit 1 }"
+`;
+
+exports[`PowerShell error log level: PowerShell 1`] = `
+"$ErrorActionPreference = "Stop"
+fjm env --log-level=error | Out-String | Invoke-Expression
+if ( "$(fjm install 17.0.2)" -ne '' ) { echo "Expected fjm install to be ''. Got $(fjm install 17.0.2)"; exit 1 }
+if ( "$(fjm use 17.0.2)" -ne '' ) { echo "Expected fjm use to be ''. Got $(fjm use 17.0.2)"; exit 1 }
+if ( "$(fjm alias 17.0.2 something)" -ne '' ) { echo "Expected fjm alias to be ''. Got $(fjm alias 17.0.2 something)"; exit 1 }
+$($__out__ = $(fjm alias abcd efg 2>&1 | Select-String "find requested version"); if ($__out__ -eq $null) { exit 1 } else { $__out__ })"
+`;
+
+exports[`Zsh "quiet" log level: Zsh 1`] = `
+"set -e
+eval "$(fjm env --log-level=quiet)"
+if [ "$(fjm install 17.0.2)" != '' ]; then
+  echo "Expected fjm install to be ''. Got $(fjm install 17.0.2)"
+  exit 1
+fi
+if [ "$(fjm use 17.0.2)" != '' ]; then
+  echo "Expected fjm use to be ''. Got $(fjm use 17.0.2)"
+  exit 1
+fi
+if [ "$(fjm alias 17.0.2 something)" != '' ]; then
+  echo "Expected fjm alias to be ''. Got $(fjm alias 17.0.2 something)"
+  exit 1
+fi"
+`;
+
+exports[`Zsh error log level: Zsh 1`] = `
+"set -e
+eval "$(fjm env --log-level=error)"
+if [ "$(fjm install 17.0.2)" != '' ]; then
+  echo "Expected fjm install to be ''. Got $(fjm install 17.0.2)"
+  exit 1
+fi
+if [ "$(fjm use 17.0.2)" != '' ]; then
+  echo "Expected fjm use to be ''. Got $(fjm use 17.0.2)"
+  exit 1
+fi
+if [ "$(fjm alias 17.0.2 something)" != '' ]; then
+  echo "Expected fjm alias to be ''. Got $(fjm alias 17.0.2 something)"
+  exit 1
+fi
+(fjm alias abcd efg 2>&1) | grep "find requested version" || (echo "Expected output to contain "find requested version"" && exit 1)"
+`;

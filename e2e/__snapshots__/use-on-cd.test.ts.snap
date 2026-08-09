@@ -1,0 +1,38 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Bash use on cd: Bash 1`] = `
+"set -e
+eval "$(fjm env --use-on-cd)"
+cd subdir
+if [ "$(java --version)" != 'openjdk version "21.0.1"' ]; then
+  echo "Expected java version to be 'openjdk version "21.0.1"'. Got $(java --version)"
+  exit 1
+fi"
+`;
+
+exports[`Fish use on cd: Fish 1`] = `
+"fjm env --use-on-cd | source
+cd subdir
+set ____test____ (java --version)
+if test "$____test____" != 'openjdk version "21.0.1"'
+  echo "Expected java version to be 'openjdk version "21.0.1"'. Got $____test____"
+  exit 1
+end"
+`;
+
+exports[`PowerShell use on cd: PowerShell 1`] = `
+"$ErrorActionPreference = "Stop"
+fjm env --use-on-cd | Out-String | Invoke-Expression
+cd subdir
+if ( "$(java --version)" -ne 'openjdk version "21.0.1"' ) { echo "Expected java version to be 'openjdk version "21.0.1"'. Got $(java --version)"; exit 1 }"
+`;
+
+exports[`Zsh use on cd: Zsh 1`] = `
+"set -e
+eval "$(fjm env --use-on-cd)"
+cd subdir
+if [ "$(java --version)" != 'openjdk version "21.0.1"' ]; then
+  echo "Expected java version to be 'openjdk version "21.0.1"'. Got $(java --version)"
+  exit 1
+fi"
+`;

@@ -1,0 +1,15 @@
+node_modules/
+.ci/screen_recording
+/benchmarks/results
+/target
+**/*.rs.bk
+feature_tests/.tmp
+*.log
+.proxy
+
+.atl
+.claude
+.agents
+skills-lock.json
+CLAUDE.md
+AGENTS.md

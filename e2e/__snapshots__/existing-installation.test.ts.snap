@@ -1,0 +1,42 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Bash detects a pre-existing installation on disk: Bash 1`] = `
+"set -e
+eval "$(fjm env)"
+(fjm ls) | grep 17.0.2 || (echo "Expected output to contain 17.0.2" && exit 1)
+fjm use 17.0.2
+if [ "$(java --version)" != 'openjdk version "17.0.2"' ]; then
+  echo "Expected java version to be 'openjdk version "17.0.2"'. Got $(java --version)"
+  exit 1
+fi"
+`;
+
+exports[`Fish detects a pre-existing installation on disk: Fish 1`] = `
+"fjm env | source
+begin; fjm ls; end | grep 17.0.2; or echo "Expected output to contain 17.0.2" && exit 1
+fjm use 17.0.2
+set ____test____ (java --version)
+if test "$____test____" != 'openjdk version "17.0.2"'
+  echo "Expected java version to be 'openjdk version "17.0.2"'. Got $____test____"
+  exit 1
+end"
+`;
+
+exports[`PowerShell detects a pre-existing installation on disk: PowerShell 1`] = `
+"$ErrorActionPreference = "Stop"
+fjm env | Out-String | Invoke-Expression
+$($__out__ = $(fjm ls | Select-String 17.0.2); if ($__out__ -eq $null) { exit 1 } else { $__out__ })
+fjm use 17.0.2
+if ( "$(java --version)" -ne 'openjdk version "17.0.2"' ) { echo "Expected java version to be 'openjdk version "17.0.2"'. Got $(java --version)"; exit 1 }"
+`;
+
+exports[`Zsh detects a pre-existing installation on disk: Zsh 1`] = `
+"set -e
+eval "$(fjm env)"
+(fjm ls) | grep 17.0.2 || (echo "Expected output to contain 17.0.2" && exit 1)
+fjm use 17.0.2
+if [ "$(java --version)" != 'openjdk version "17.0.2"' ]; then
+  echo "Expected java version to be 'openjdk version "17.0.2"'. Got $(java --version)"
+  exit 1
+fi"
+`;
