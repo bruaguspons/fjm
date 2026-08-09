@@ -11,8 +11,8 @@ import seedJdkInstall from "./shellcode/seed-jdk-install.js"
 for (const shell of [Bash, Zsh, Fish, PowerShell, WinCmd]) {
   describe(shell, () => {
     test(`current returns the current JDK version set in fjm`, async () => {
-      seedJdkInstall(fjmDirForCurrentTest(), "17.0.2")
-      seedJdkInstall(fjmDirForCurrentTest(), "21.0.1")
+      await seedJdkInstall(fjmDirForCurrentTest(), "17.0.2")
+      await seedJdkInstall(fjmDirForCurrentTest(), "21.0.1")
 
       await script(shell)
         .then(shell.env({}))

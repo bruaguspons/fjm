@@ -19,12 +19,12 @@ pub fn infer_shell() -> Option<Box<dyn Shell>> {
                 .exe()
                 .and_then(|x| {
                     tap_none(x.file_stem(), || {
-                        warn!("failed to get file stem from {:?}", x);
+                        warn!("failed to get file stem from {}", x.display());
                     })
                 })
                 .and_then(|x| {
                     tap_none(x.to_str(), || {
-                        warn!("failed to convert file stem to string: {:?}", x);
+                        warn!("failed to convert file stem to string: {}", x.display());
                     })
                 })
                 .map(str::to_lowercase);
@@ -51,7 +51,7 @@ where
     match &opt {
         Some(_) => (),
         None => f(),
-    };
+    }
 
     opt
 }

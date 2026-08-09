@@ -21,7 +21,7 @@ for (const shell of [Bash, Zsh, Fish, PowerShell]) {
     })
 
     test(`unalias a version`, async () => {
-      seedJdkInstall(fjmDirForCurrentTest(), "11.0.21")
+      await seedJdkInstall(fjmDirForCurrentTest(), "11.0.21")
       await script(shell)
         .then(shell.env({}))
         .then(shell.call("fjm", ["alias", "11.0.21", "version11"]))
@@ -82,8 +82,8 @@ for (const shell of [Bash, Zsh, Fish, PowerShell]) {
     })
 
     test(`aliasing versions`, async () => {
-      seedJdkInstall(fjmDirForCurrentTest(), "11.0.21")
-      seedJdkInstall(fjmDirForCurrentTest(), "17.0.2")
+      await seedJdkInstall(fjmDirForCurrentTest(), "11.0.21")
+      await seedJdkInstall(fjmDirForCurrentTest(), "17.0.2")
       const installedVersions = shell.call("fjm", ["ls"])
       await script(shell)
         .then(shell.env({}))

@@ -13,7 +13,7 @@ import seedJdkInstall from "./shellcode/seed-jdk-install.js"
 for (const shell of [Bash, Zsh, Fish, PowerShell]) {
   describe(shell, () => {
     test(`detects a pre-existing installation on disk`, async () => {
-      seedJdkInstall(fjmDirForCurrentTest(), "17.0.2")
+      await seedJdkInstall(fjmDirForCurrentTest(), "17.0.2")
 
       await script(shell)
         .then(shell.env({}))

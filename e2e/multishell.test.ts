@@ -7,8 +7,8 @@ import seedJdkInstall from "./shellcode/seed-jdk-install.js"
 for (const shell of [Bash, Zsh, Fish, PowerShell]) {
   describe(shell, () => {
     test(`multishell changes don't affect parent`, async () => {
-      seedJdkInstall(fjmDirForCurrentTest(), "17.0.2")
-      seedJdkInstall(fjmDirForCurrentTest(), "21.0.1")
+      await seedJdkInstall(fjmDirForCurrentTest(), "17.0.2")
+      await seedJdkInstall(fjmDirForCurrentTest(), "21.0.1")
 
       await script(shell)
         .then(shell.env({}))

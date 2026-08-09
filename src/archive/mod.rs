@@ -1,4 +1,5 @@
 pub mod extract;
+#[cfg(unix)]
 pub mod tar;
 pub mod zip;
 

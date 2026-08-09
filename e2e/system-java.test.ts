@@ -6,6 +6,7 @@ import describe from "./describe.js"
 import testJavaVersion from "./shellcode/test-java-version.js"
 import testBinDir from "./shellcode/test-bin-dir.js"
 import seedJdkInstall from "./shellcode/seed-jdk-install.js"
+import { writeStub } from "./shellcode/compile-java-stub.js"
 
 for (const shell of [Bash, Fish, PowerShell, WinCmd, Zsh]) {
   describe(shell, () => {
@@ -14,7 +15,7 @@ for (const shell of [Bash, Fish, PowerShell, WinCmd, Zsh]) {
 
     t(`switches to system java`, async () => {
       await writeCustomJava()
-      seedJdkInstall(fjmDirForCurrentTest(), "11.0.21")
+      await seedJdkInstall(fjmDirForCurrentTest(), "11.0.21")
 
       await script(shell)
         .then(shell.env({}))
@@ -33,7 +34,7 @@ for (const shell of [Bash, Fish, PowerShell, WinCmd, Zsh]) {
 
     t(`aliasing a system java`, async () => {
       await writeCustomJava()
-      seedJdkInstall(fjmDirForCurrentTest(), "11.0.21")
+      await seedJdkInstall(fjmDirForCurrentTest(), "11.0.21")
       const init = script(shell).then(shell.env({}))
 
       await init
@@ -59,10 +60,10 @@ for (const shell of [Bash, Fish, PowerShell, WinCmd, Zsh]) {
   })
 
   async function writeCustomJava() {
-    const customJava = path.join(testBinDir(), "java")
-    if (process.platform === "win32" && [WinCmd, PowerShell].includes(shell)) {
-      await fs.writeFile(customJava + ".cmd", "@echo custom")
+    if (process.platform === "win32") {
+      await writeStub(testBinDir(), "custom")
     } else {
+      const customJava = path.join(testBinDir(), "java")
       await fs.writeFile(customJava, `#!/bin/bash\n\necho "custom"\n`)
       // set executable
       await fs.chmod(customJava, 0o766)

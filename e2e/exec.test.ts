@@ -9,9 +9,9 @@ import seedJdkInstall from "./shellcode/seed-jdk-install.js"
 for (const shell of [Bash, Zsh, Fish, PowerShell, WinCmd]) {
   describe(shell, () => {
     test("`exec` usage", async () => {
-      seedJdkInstall(fjmDirForCurrentTest(), "17.0.2")
-      seedJdkInstall(fjmDirForCurrentTest(), "11.0.21")
-      seedJdkInstall(fjmDirForCurrentTest(), "21.0.1")
+      await seedJdkInstall(fjmDirForCurrentTest(), "17.0.2")
+      await seedJdkInstall(fjmDirForCurrentTest(), "11.0.21")
+      await seedJdkInstall(fjmDirForCurrentTest(), "21.0.1")
       await writeFile(join(testCwd(), ".java-version"), "17.0.2")
 
       await script(shell)

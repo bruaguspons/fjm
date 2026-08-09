@@ -39,7 +39,7 @@ for (const shell of [Bash, Zsh, Fish, PowerShell, WinCmd]) {
     // directory directly, so `use`/`current`-facing behavior can be
     // exercised end-to-end without a real download.
     test(`use a fixture-seeded install`, async () => {
-      seedJdkInstall(fjmDirForCurrentTest(), "17.0.2")
+      await seedJdkInstall(fjmDirForCurrentTest(), "17.0.2")
       await script(shell)
         .then(shell.env({}))
         .then(shell.call("fjm", ["use", "17.0.2"]))
@@ -49,7 +49,7 @@ for (const shell of [Bash, Zsh, Fish, PowerShell, WinCmd]) {
     })
 
     test(`.java-version`, async () => {
-      seedJdkInstall(fjmDirForCurrentTest(), "17.0.2")
+      await seedJdkInstall(fjmDirForCurrentTest(), "17.0.2")
       await writeFile(join(testCwd(), ".java-version"), "17.0.2")
       await script(shell)
         .then(shell.env({}))
@@ -60,7 +60,7 @@ for (const shell of [Bash, Zsh, Fish, PowerShell, WinCmd]) {
     })
 
     test(`resolves partial semver`, async () => {
-      seedJdkInstall(fjmDirForCurrentTest(), "21.0.1")
+      await seedJdkInstall(fjmDirForCurrentTest(), "21.0.1")
       await script(shell)
         .then(shell.env({}))
         .then(shell.call("fjm", ["use", "21"]))

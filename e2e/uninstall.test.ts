@@ -6,7 +6,7 @@ import seedJdkInstall from "./shellcode/seed-jdk-install.js"
 for (const shell of [Bash, Zsh, Fish, PowerShell]) {
   describe(shell, () => {
     test(`uninstalls a version`, async () => {
-      seedJdkInstall(fjmDirForCurrentTest(), "17.0.2")
+      await seedJdkInstall(fjmDirForCurrentTest(), "17.0.2")
       await script(shell)
         .then(shell.call("fjm", ["alias", "17.0.2", "hello"]))
         .then(

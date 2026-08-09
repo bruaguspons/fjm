@@ -53,7 +53,7 @@ fn archive_for_name(name: &str) -> Result<Archive, Error> {
 
 #[cfg(windows)]
 fn archive_for_name(name: &str) -> Result<Archive, Error> {
-    if name.ends_with(".zip") {
+    if name.to_ascii_lowercase().ends_with(".zip") {
         Ok(Archive::Zip)
     } else {
         Err(Error::UnsupportedArchiveFormat {

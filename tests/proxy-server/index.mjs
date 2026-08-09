@@ -150,7 +150,7 @@ function assetsFeatureReleasesBody(major, page, downloadPath) {
       release_name: `jdk-${fixture.semver}`,
       release_type: "ga",
       vendor: "eclipse",
-      version: {
+      version_data: {
         major: fixture.major,
         openjdk_version: fixture.semver,
         semver: fixture.semver,

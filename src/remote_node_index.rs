@@ -50,6 +50,7 @@ struct AssetVersionData {
 #[derive(Deserialize, Debug)]
 struct FeatureRelease {
     binaries: Vec<Binary>,
+    #[serde(rename = "version_data")]
     version: AssetVersionData,
 }
 
@@ -380,10 +381,11 @@ mod tests {
         );
     }
 
-    // Modeled on the real `/v3/assets/feature_releases/{feature_version}/ga`
-    // response shape (a list of releases, each with a `binaries` array,
-    // unlike `/v3/assets/latest/...`'s single `binary`). Two patches of the
-    // same major are included to exercise exact-patch selection.
+    // Captured live from `/v3/assets/feature_releases/{feature_version}/ga`
+    // (a list of releases, each with a `binaries` array, unlike
+    // `/v3/assets/latest/...`'s single `binary`, and a top-level
+    // `version_data` field rather than `version`). Two patches of the same
+    // major are included to exercise exact-patch selection.
     const FEATURE_RELEASES_FIXTURE: &str = r#"[
         {
             "binaries": [
@@ -404,7 +406,7 @@ mod tests {
             "release_name": "jdk-17.0.9+9",
             "release_type": "ga",
             "vendor": "eclipse",
-            "version": {
+            "version_data": {
                 "build": 9,
                 "major": 17,
                 "minor": 0,
@@ -432,7 +434,7 @@ mod tests {
             "release_name": "jdk-17.0.1+10",
             "release_type": "ga",
             "vendor": "eclipse",
-            "version": {
+            "version_data": {
                 "build": 10,
                 "major": 17,
                 "minor": 0,

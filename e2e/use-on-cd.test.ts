@@ -10,8 +10,8 @@ import seedJdkInstall from "./shellcode/seed-jdk-install.js"
 for (const shell of [Bash, Zsh, Fish, PowerShell, WinCmd]) {
   describe(shell, () => {
     test(`use on cd`, async () => {
-      seedJdkInstall(fjmDirForCurrentTest(), "17.0.2")
-      seedJdkInstall(fjmDirForCurrentTest(), "21.0.1")
+      await seedJdkInstall(fjmDirForCurrentTest(), "17.0.2")
+      await seedJdkInstall(fjmDirForCurrentTest(), "21.0.1")
       await mkdir(join(testCwd(), "subdir"), { recursive: true })
       await writeFile(join(testCwd(), "subdir", ".java-version"), "21.0.1")
       await script(shell)
@@ -23,8 +23,8 @@ for (const shell of [Bash, Zsh, Fish, PowerShell, WinCmd]) {
     })
 
     test(`uses current directory version immediately on env setup`, async () => {
-      seedJdkInstall(fjmDirForCurrentTest(), "17.0.2")
-      seedJdkInstall(fjmDirForCurrentTest(), "21.0.1")
+      await seedJdkInstall(fjmDirForCurrentTest(), "17.0.2")
+      await seedJdkInstall(fjmDirForCurrentTest(), "21.0.1")
       await writeFile(join(testCwd(), ".java-version"), "21.0.1")
       await script(shell)
         .then(shell.env({}))
@@ -35,8 +35,8 @@ for (const shell of [Bash, Zsh, Fish, PowerShell, WinCmd]) {
     })
 
     test(`works after sourcing env twice`, async () => {
-      seedJdkInstall(fjmDirForCurrentTest(), "17.0.2")
-      seedJdkInstall(fjmDirForCurrentTest(), "21.0.1")
+      await seedJdkInstall(fjmDirForCurrentTest(), "17.0.2")
+      await seedJdkInstall(fjmDirForCurrentTest(), "21.0.1")
       await mkdir(join(testCwd(), "subdir"), { recursive: true })
       await writeFile(join(testCwd(), "subdir", ".java-version"), "21.0.1")
       await script(shell)

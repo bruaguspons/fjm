@@ -1,5 +1,6 @@
 import { mkdirSync, writeFileSync, chmodSync } from "node:fs"
 import path from "node:path"
+import { writeStub } from "./compile-java-stub.js"
 
 /**
  * Seeds a fake JDK installation directly on disk, bypassing `fjm install`
@@ -10,12 +11,14 @@ import path from "node:path"
  * design doc for `sdd/e2e-ci-docs-rebrand`), so e2e tests that need to
  * exercise `use`/`current`/`ls`/`alias`/`exec`/`env`/`uninstall`/multishell/
  * use-on-cd end-to-end must seed the install directory the same way `fjm
- * install` would have laid it out: `<fjmDir>/node-versions/<version>/installation/{bin/java,bin/java.exe}`.
+ * install` would have laid it out: `<fjmDir>/node-versions/<version>/installation/{bin/java,java.exe}`.
  *
- * Writes a fake `java`/`java.exe` script that prints a parseable
- * `openjdk version "<version>"` line to stdout on `--version`, matching the
- * seeded version. See `test-java-version.ts` for the corresponding
- * assertion helper.
+ * Writes a fake `java`/`java.exe` that prints a parseable
+ * `openjdk version "<version>"` line to stdout, matching the seeded
+ * version. See `test-java-version.ts` for the corresponding assertion
+ * helper. On Windows this is a real compiled `.exe` (see
+ * `compile-java-stub.ts`), since a plain-text file cannot be named
+ * `java.exe` and executed there.
  *
  * The on-disk directory is named `v<version>` (not bare `<version>`):
  * `Version::installation_path()` in `src/version.rs` always resolves a
@@ -29,7 +32,7 @@ import path from "node:path"
  * @param version The JDK version string to seed, e.g. `"17.0.2"` (no `v` prefix).
  * @returns The absolute path to the seeded `installation` directory.
  */
-export default function seedJdkInstall(fjmDir: string, version: string): string {
+export default async function seedJdkInstall(fjmDir: string, version: string): Promise<string> {
   const installationDir = path.join(fjmDir, "node-versions", `v${version}`, "installation")
 
   const versionLine = `openjdk version "${version}"`
@@ -38,16 +41,12 @@ export default function seedJdkInstall(fjmDir: string, version: string): string 
     // On Windows, `fjm` puts the binary directly in the `installation` root
     // (no `bin` subdirectory) — see `set_path_for_multishell` in
     // src/commands/env.rs and the `#[cfg(windows)]` branch in
-    // src/commands/exec.rs. A plain-text file also cannot be named
-    // `java.exe` and executed on Windows (`.exe` requires a real PE binary),
-    // so we use `java.cmd` instead, which Windows resolves through PATHEXT
-    // the same way `java.exe` would when `java --version` is invoked
-    // without an extension. This is a deliberate deviation from the literal
-    // `java.exe` naming in the design doc's open question, since a
-    // text-content `.exe` is not runnable.
-    mkdirSync(installationDir, { recursive: true })
-    const javaBin = path.join(installationDir, "java.cmd")
-    writeFileSync(javaBin, `@echo off\r\necho ${versionLine}\r\n`)
+    // src/commands/exec.rs. We seed a real `java.exe` (compiled once via
+    // `compile-java-stub.ts` and reused for every seeded install) rather
+    // than a `.cmd` script, so it resolves via bare `java` for both
+    // `Command::new` and MSYS/Git-Bash's own PATH resolution without
+    // depending on `PATHEXT`.
+    await writeStub(installationDir, `${versionLine}\n`)
   } else {
     // On unix, `fjm` adds `installation/bin` to PATH — see
     // `set_path_for_multishell` in src/commands/env.rs and the
