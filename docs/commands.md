@@ -27,6 +27,12 @@ Options:
           [env: FJM_JDK_DIST_MIRROR]
           [default: https://api.adoptium.net]
 
+      --maven-dist-mirror <MAVEN_DIST_MIRROR>
+          Maven Central (or a mirror) base URL override, used to resolve and download Maven distributions. Symmetric to `--jdk-dist-mirror`
+
+          [env: FJM_MAVEN_DIST_MIRROR]
+          [default: https://repo.maven.apache.org/maven2]
+
       --fjm-dir <BASE_DIR>
           The root directory of fjm installations
 
@@ -70,14 +76,26 @@ List all remote JDK versions
 Usage: fjm list-remote [OPTIONS]
 
 Options:
-      --filter <FILTER>
-          Filter versions by a user-defined version or a semver range
-
       --jdk-dist-mirror <JDK_DIST_MIRROR>
           Adoptium (Eclipse Temurin) API base URL override
 
           [env: FJM_JDK_DIST_MIRROR]
           [default: https://api.adoptium.net]
+
+      --tool <TOOL>
+          Which tool's remote index to list
+
+          [default: java]
+          [possible values: java, maven]
+
+      --filter <FILTER>
+          Filter versions by a user-defined version or a semver range
+
+      --maven-dist-mirror <MAVEN_DIST_MIRROR>
+          Maven Central (or a mirror) base URL override, used to resolve and download Maven distributions. Symmetric to `--jdk-dist-mirror`
+
+          [env: FJM_MAVEN_DIST_MIRROR]
+          [default: https://repo.maven.apache.org/maven2]
 
       --fjm-dir <BASE_DIR>
           The root directory of fjm installations
@@ -85,7 +103,7 @@ Options:
           [env: FJM_DIR]
 
       --lts
-          Show only LTS versions
+          Show only LTS versions (Java only)
 
       --sort <SORT>
           Version sorting order
@@ -140,6 +158,17 @@ Options:
           [env: FJM_JDK_DIST_MIRROR]
           [default: https://api.adoptium.net]
 
+      --tool <TOOL>
+          Restrict listing to a single tool. When omitted, every tool's installed versions are listed
+
+          [possible values: java, maven]
+
+      --maven-dist-mirror <MAVEN_DIST_MIRROR>
+          Maven Central (or a mirror) base URL override, used to resolve and download Maven distributions. Symmetric to `--jdk-dist-mirror`
+
+          [env: FJM_MAVEN_DIST_MIRROR]
+          [default: https://repo.maven.apache.org/maven2]
+
       --fjm-dir <BASE_DIR>
           The root directory of fjm installations
 
@@ -190,8 +219,20 @@ Options:
           [env: FJM_JDK_DIST_MIRROR]
           [default: https://api.adoptium.net]
 
+      --tool <TOOL>
+          Which tool to install a version for
+
+          [default: java]
+          [possible values: java, maven]
+
       --lts
-          Install latest LTS
+          Install latest LTS (Java only)
+
+      --maven-dist-mirror <MAVEN_DIST_MIRROR>
+          Maven Central (or a mirror) base URL override, used to resolve and download Maven distributions. Symmetric to `--jdk-dist-mirror`
+
+          [env: FJM_MAVEN_DIST_MIRROR]
+          [default: https://repo.maven.apache.org/maven2]
 
       --fjm-dir <BASE_DIR>
           The root directory of fjm installations
@@ -249,14 +290,26 @@ Arguments:
 
 
 Options:
-      --install-if-missing
-          Install the version if it isn't installed yet
-
       --jdk-dist-mirror <JDK_DIST_MIRROR>
           Adoptium (Eclipse Temurin) API base URL override
 
           [env: FJM_JDK_DIST_MIRROR]
           [default: https://api.adoptium.net]
+
+      --tool <TOOL>
+          Which tool's activation slot to target
+
+          [default: java]
+          [possible values: java, maven]
+
+      --install-if-missing
+          Install the version if it isn't installed yet
+
+      --maven-dist-mirror <MAVEN_DIST_MIRROR>
+          Maven Central (or a mirror) base URL override, used to resolve and download Maven distributions. Symmetric to `--jdk-dist-mirror`
+
+          [env: FJM_MAVEN_DIST_MIRROR]
+          [default: https://repo.maven.apache.org/maven2]
 
       --fjm-dir <BASE_DIR>
           The root directory of fjm installations
@@ -316,13 +369,22 @@ Options:
 
           [possible values: bash, zsh, fish, powershell]
 
+      --json
+          Print JSON instead of shell commands
+
+      --maven-dist-mirror <MAVEN_DIST_MIRROR>
+          Maven Central (or a mirror) base URL override, used to resolve and download Maven distributions. Symmetric to `--jdk-dist-mirror`
+
+          [env: FJM_MAVEN_DIST_MIRROR]
+          [default: https://repo.maven.apache.org/maven2]
+
       --fjm-dir <BASE_DIR>
           The root directory of fjm installations
 
           [env: FJM_DIR]
 
-      --json
-          Print JSON instead of shell commands
+      --use-on-cd
+          Print the script to change JDK versions every directory change
 
       --log-level <LOG_LEVEL>
           The log level of fjm commands
@@ -330,9 +392,6 @@ Options:
           [env: FJM_LOGLEVEL]
           [default: info]
           [possible values: quiet, error, info]
-
-      --use-on-cd
-          Print the script to change JDK versions every directory change
 
       --arch <ARCH>
           Override the architecture of the installed JDK binary. Defaults to arch of fjm binary
@@ -372,6 +431,12 @@ Options:
           The shell syntax to use. Infers when missing
 
           [possible values: bash, zsh, fish, powershell]
+
+      --maven-dist-mirror <MAVEN_DIST_MIRROR>
+          Maven Central (or a mirror) base URL override, used to resolve and download Maven distributions. Symmetric to `--jdk-dist-mirror`
+
+          [env: FJM_MAVEN_DIST_MIRROR]
+          [default: https://repo.maven.apache.org/maven2]
 
       --fjm-dir <BASE_DIR>
           The root directory of fjm installations
@@ -426,6 +491,18 @@ Options:
           [env: FJM_JDK_DIST_MIRROR]
           [default: https://api.adoptium.net]
 
+      --tool <TOOL>
+          Which tool the alias applies to
+
+          [default: java]
+          [possible values: java, maven]
+
+      --maven-dist-mirror <MAVEN_DIST_MIRROR>
+          Maven Central (or a mirror) base URL override, used to resolve and download Maven distributions. Symmetric to `--jdk-dist-mirror`
+
+          [env: FJM_MAVEN_DIST_MIRROR]
+          [default: https://repo.maven.apache.org/maven2]
+
       --fjm-dir <BASE_DIR>
           The root directory of fjm installations
 
@@ -475,6 +552,18 @@ Options:
 
           [env: FJM_JDK_DIST_MIRROR]
           [default: https://api.adoptium.net]
+
+      --tool <TOOL>
+          Which tool the alias belongs to
+
+          [default: java]
+          [possible values: java, maven]
+
+      --maven-dist-mirror <MAVEN_DIST_MIRROR>
+          Maven Central (or a mirror) base URL override, used to resolve and download Maven distributions. Symmetric to `--jdk-dist-mirror`
+
+          [env: FJM_MAVEN_DIST_MIRROR]
+          [default: https://repo.maven.apache.org/maven2]
 
       --fjm-dir <BASE_DIR>
           The root directory of fjm installations
@@ -528,6 +617,18 @@ Options:
           [env: FJM_JDK_DIST_MIRROR]
           [default: https://api.adoptium.net]
 
+      --tool <TOOL>
+          Which tool to set/read the default version for
+
+          [default: java]
+          [possible values: java, maven]
+
+      --maven-dist-mirror <MAVEN_DIST_MIRROR>
+          Maven Central (or a mirror) base URL override, used to resolve and download Maven distributions. Symmetric to `--jdk-dist-mirror`
+
+          [env: FJM_MAVEN_DIST_MIRROR]
+          [default: https://repo.maven.apache.org/maven2]
+
       --fjm-dir <BASE_DIR>
           The root directory of fjm installations
 
@@ -573,6 +674,17 @@ Options:
 
           [env: FJM_JDK_DIST_MIRROR]
           [default: https://api.adoptium.net]
+
+      --tool <TOOL>
+          Restrict output to a single tool. When omitted, every tool's active version is shown
+
+          [possible values: java, maven]
+
+      --maven-dist-mirror <MAVEN_DIST_MIRROR>
+          Maven Central (or a mirror) base URL override, used to resolve and download Maven distributions. Symmetric to `--jdk-dist-mirror`
+
+          [env: FJM_MAVEN_DIST_MIRROR]
+          [default: https://repo.maven.apache.org/maven2]
 
       --fjm-dir <BASE_DIR>
           The root directory of fjm installations
@@ -632,10 +744,22 @@ Options:
       --using <VERSION>
           Either an explicit version, or a filename with the version written in it
 
+      --maven-dist-mirror <MAVEN_DIST_MIRROR>
+          Maven Central (or a mirror) base URL override, used to resolve and download Maven distributions. Symmetric to `--jdk-dist-mirror`
+
+          [env: FJM_MAVEN_DIST_MIRROR]
+          [default: https://repo.maven.apache.org/maven2]
+
       --fjm-dir <BASE_DIR>
           The root directory of fjm installations
 
           [env: FJM_DIR]
+
+      --tool <TOOL>
+          Which tool's version to resolve `--using` against
+
+          [default: java]
+          [possible values: java, maven]
 
       --log-level <LOG_LEVEL>
           The log level of fjm commands
@@ -683,6 +807,18 @@ Options:
 
           [env: FJM_JDK_DIST_MIRROR]
           [default: https://api.adoptium.net]
+
+      --tool <TOOL>
+          Which tool to uninstall a version for
+
+          [default: java]
+          [possible values: java, maven]
+
+      --maven-dist-mirror <MAVEN_DIST_MIRROR>
+          Maven Central (or a mirror) base URL override, used to resolve and download Maven distributions. Symmetric to `--jdk-dist-mirror`
+
+          [env: FJM_MAVEN_DIST_MIRROR]
+          [default: https://repo.maven.apache.org/maven2]
 
       --fjm-dir <BASE_DIR>
           The root directory of fjm installations
