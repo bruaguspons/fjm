@@ -174,7 +174,7 @@ fn install_maven(install: Install, config: &FjmConfig) -> Result<(), Error> {
             let available = remote_maven_index::list(config.dist_mirror_for(tool))
                 .map_err(|source| Error::CantListRemoteMavenVersions { source })?;
             let picked = available.into_iter().max().ok_or(Error::CantFindLatest)?;
-            picked.v_str()
+            picked.v_str().trim_start_matches('v').to_string()
         }
         UserVersion::Full(Version::Semver(_)) => current_version
             .to_string()
@@ -192,6 +192,8 @@ fn install_maven(install: Install, config: &FjmConfig) -> Result<(), Error> {
                     requested_version: current_version.clone(),
                 })?
                 .v_str()
+                .trim_start_matches('v')
+                .to_string()
         }
         UserVersion::Full(Version::Lts(_)) => {
             return Err(Error::LtsNotSupportedForMaven);
