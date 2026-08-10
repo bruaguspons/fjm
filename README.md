@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="./docs/logo.png" alt="fjm logo" width="200">
+</p>
+
 <h1 align="center">
   Fast Java Manager (<code>fjm</code>)
 </h1>
