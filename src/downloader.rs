@@ -62,6 +62,8 @@ fn archive_for_name(name: &str) -> Result<Archive, Error> {
         Ok(Archive::TarGz)
     } else if name.ends_with(".tar.xz") {
         Ok(Archive::TarXz)
+    } else if name.to_ascii_lowercase().ends_with(".zip") {
+        Ok(Archive::Zip)
     } else {
         Err(Error::UnsupportedArchiveFormat {
             name: name.to_string(),
@@ -275,6 +277,15 @@ mod tests {
         assert!(matches!(
             archive_for_name("weird.rar"),
             Err(Error::UnsupportedArchiveFormat { .. })
+        ));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn test_archive_for_name_picks_zip_for_gradle() {
+        assert!(matches!(
+            archive_for_name("gradle-8.10-bin.zip"),
+            Ok(Archive::Zip)
         ));
     }
 

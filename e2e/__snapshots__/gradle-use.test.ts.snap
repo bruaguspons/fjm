@@ -1,0 +1,225 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Bash .java-version and .gradle-version coexist in one directory: Bash 1`] = `
+"set -e
+eval "$(fjm env)"
+fjm use
+if [ "$(java --version)" != 'openjdk version "17.0.2"' ]; then
+  echo "Expected java version to be 'openjdk version "17.0.2"'. Got $(java --version)"
+  exit 1
+fi
+fjm use --tool gradle
+if [ "$(gradle --version)" != 'Gradle 8.10.0' ]; then
+  echo "Expected gradle version to be 'Gradle 8.10.0'. Got $(gradle --version)"
+  exit 1
+fi"
+`;
+
+exports[`Bash alias/unalias, default, and current work for --tool gradle: Bash 1`] = `
+"set -e
+eval "$(fjm env)"
+fjm alias 8.10.0 my-gradle --tool gradle
+fjm default 8.10.0 --tool gradle
+fjm use --tool gradle 8.10.0
+if [ "$(gradle --version)" != 'Gradle 8.10.0' ]; then
+  echo "Expected gradle version to be 'Gradle 8.10.0'. Got $(gradle --version)"
+  exit 1
+fi
+fjm unalias my-gradle --tool gradle
+if [ "$(fjm current --tool gradle)" != 'v8.10.0' ]; then
+  echo "Expected fjm current --tool gradle to be 'v8.10.0'. Got $(fjm current --tool gradle)"
+  exit 1
+fi"
+`;
+
+exports[`Bash use --tool gradle activates Gradle without disturbing Java: Bash 1`] = `
+"set -e
+eval "$(fjm env)"
+fjm use 17.0.2
+if [ "$(java --version)" != 'openjdk version "17.0.2"' ]; then
+  echo "Expected java version to be 'openjdk version "17.0.2"'. Got $(java --version)"
+  exit 1
+fi
+fjm use --tool gradle 8.10.0
+if [ "$(gradle --version)" != 'Gradle 8.10.0' ]; then
+  echo "Expected gradle version to be 'Gradle 8.10.0'. Got $(gradle --version)"
+  exit 1
+fi
+if [ "$(java --version)" != 'openjdk version "17.0.2"' ]; then
+  echo "Expected java version to be 'openjdk version "17.0.2"'. Got $(java --version)"
+  exit 1
+fi"
+`;
+
+exports[`Bash use --tool gradle works with no Java version active: Bash 1`] = `
+"set -e
+eval "$(fjm env)"
+fjm use --tool gradle 8.10.0
+if [ "$(gradle --version)" != 'Gradle 8.10.0' ]; then
+  echo "Expected gradle version to be 'Gradle 8.10.0'. Got $(gradle --version)"
+  exit 1
+fi"
+`;
+
+exports[`Fish .java-version and .gradle-version coexist in one directory: Fish 1`] = `
+"fjm env | source
+fjm use
+set ____test____ (java --version)
+if test "$____test____" != 'openjdk version "17.0.2"'
+  echo "Expected java version to be 'openjdk version "17.0.2"'. Got $____test____"
+  exit 1
+end
+fjm use --tool gradle
+set ____test____ (gradle --version)
+if test "$____test____" != 'Gradle 8.10.0'
+  echo "Expected gradle version to be 'Gradle 8.10.0'. Got $____test____"
+  exit 1
+end"
+`;
+
+exports[`Fish alias/unalias, default, and current work for --tool gradle: Fish 1`] = `
+"fjm env | source
+fjm alias 8.10.0 my-gradle --tool gradle
+fjm default 8.10.0 --tool gradle
+fjm use --tool gradle 8.10.0
+set ____test____ (gradle --version)
+if test "$____test____" != 'Gradle 8.10.0'
+  echo "Expected gradle version to be 'Gradle 8.10.0'. Got $____test____"
+  exit 1
+end
+fjm unalias my-gradle --tool gradle
+set ____test____ (fjm current --tool gradle)
+if test "$____test____" != 'v8.10.0'
+  echo "Expected fjm current --tool gradle to be 'v8.10.0'. Got $____test____"
+  exit 1
+end"
+`;
+
+exports[`Fish use --tool gradle activates Gradle without disturbing Java: Fish 1`] = `
+"fjm env | source
+fjm use 17.0.2
+set ____test____ (java --version)
+if test "$____test____" != 'openjdk version "17.0.2"'
+  echo "Expected java version to be 'openjdk version "17.0.2"'. Got $____test____"
+  exit 1
+end
+fjm use --tool gradle 8.10.0
+set ____test____ (gradle --version)
+if test "$____test____" != 'Gradle 8.10.0'
+  echo "Expected gradle version to be 'Gradle 8.10.0'. Got $____test____"
+  exit 1
+end
+set ____test____ (java --version)
+if test "$____test____" != 'openjdk version "17.0.2"'
+  echo "Expected java version to be 'openjdk version "17.0.2"'. Got $____test____"
+  exit 1
+end"
+`;
+
+exports[`Fish use --tool gradle works with no Java version active: Fish 1`] = `
+"fjm env | source
+fjm use --tool gradle 8.10.0
+set ____test____ (gradle --version)
+if test "$____test____" != 'Gradle 8.10.0'
+  echo "Expected gradle version to be 'Gradle 8.10.0'. Got $____test____"
+  exit 1
+end"
+`;
+
+exports[`PowerShell .java-version and .gradle-version coexist in one directory: PowerShell 1`] = `
+"$ErrorActionPreference = "Stop"
+fjm env | Out-String | Invoke-Expression
+fjm use
+if ( "$(java --version)" -ne 'openjdk version "17.0.2"' ) { echo "Expected java version to be 'openjdk version "17.0.2"'. Got $(java --version)"; exit 1 }
+fjm use --tool gradle
+if ( "$(gradle --version)" -ne 'Gradle 8.10.0' ) { echo "Expected gradle version to be 'Gradle 8.10.0'. Got $(gradle --version)"; exit 1 }"
+`;
+
+exports[`PowerShell alias/unalias, default, and current work for --tool gradle: PowerShell 1`] = `
+"$ErrorActionPreference = "Stop"
+fjm env | Out-String | Invoke-Expression
+fjm alias 8.10.0 my-gradle --tool gradle
+fjm default 8.10.0 --tool gradle
+fjm use --tool gradle 8.10.0
+if ( "$(gradle --version)" -ne 'Gradle 8.10.0' ) { echo "Expected gradle version to be 'Gradle 8.10.0'. Got $(gradle --version)"; exit 1 }
+fjm unalias my-gradle --tool gradle
+if ( "$(fjm current --tool gradle)" -ne 'v8.10.0' ) { echo "Expected fjm current --tool gradle to be 'v8.10.0'. Got $(fjm current --tool gradle)"; exit 1 }"
+`;
+
+exports[`PowerShell use --tool gradle activates Gradle without disturbing Java: PowerShell 1`] = `
+"$ErrorActionPreference = "Stop"
+fjm env | Out-String | Invoke-Expression
+fjm use 17.0.2
+if ( "$(java --version)" -ne 'openjdk version "17.0.2"' ) { echo "Expected java version to be 'openjdk version "17.0.2"'. Got $(java --version)"; exit 1 }
+fjm use --tool gradle 8.10.0
+if ( "$(gradle --version)" -ne 'Gradle 8.10.0' ) { echo "Expected gradle version to be 'Gradle 8.10.0'. Got $(gradle --version)"; exit 1 }
+if ( "$(java --version)" -ne 'openjdk version "17.0.2"' ) { echo "Expected java version to be 'openjdk version "17.0.2"'. Got $(java --version)"; exit 1 }"
+`;
+
+exports[`PowerShell use --tool gradle works with no Java version active: PowerShell 1`] = `
+"$ErrorActionPreference = "Stop"
+fjm env | Out-String | Invoke-Expression
+fjm use --tool gradle 8.10.0
+if ( "$(gradle --version)" -ne 'Gradle 8.10.0' ) { echo "Expected gradle version to be 'Gradle 8.10.0'. Got $(gradle --version)"; exit 1 }"
+`;
+
+exports[`Zsh .java-version and .gradle-version coexist in one directory: Zsh 1`] = `
+"set -e
+eval "$(fjm env)"
+fjm use
+if [ "$(java --version)" != 'openjdk version "17.0.2"' ]; then
+  echo "Expected java version to be 'openjdk version "17.0.2"'. Got $(java --version)"
+  exit 1
+fi
+fjm use --tool gradle
+if [ "$(gradle --version)" != 'Gradle 8.10.0' ]; then
+  echo "Expected gradle version to be 'Gradle 8.10.0'. Got $(gradle --version)"
+  exit 1
+fi"
+`;
+
+exports[`Zsh alias/unalias, default, and current work for --tool gradle: Zsh 1`] = `
+"set -e
+eval "$(fjm env)"
+fjm alias 8.10.0 my-gradle --tool gradle
+fjm default 8.10.0 --tool gradle
+fjm use --tool gradle 8.10.0
+if [ "$(gradle --version)" != 'Gradle 8.10.0' ]; then
+  echo "Expected gradle version to be 'Gradle 8.10.0'. Got $(gradle --version)"
+  exit 1
+fi
+fjm unalias my-gradle --tool gradle
+if [ "$(fjm current --tool gradle)" != 'v8.10.0' ]; then
+  echo "Expected fjm current --tool gradle to be 'v8.10.0'. Got $(fjm current --tool gradle)"
+  exit 1
+fi"
+`;
+
+exports[`Zsh use --tool gradle activates Gradle without disturbing Java: Zsh 1`] = `
+"set -e
+eval "$(fjm env)"
+fjm use 17.0.2
+if [ "$(java --version)" != 'openjdk version "17.0.2"' ]; then
+  echo "Expected java version to be 'openjdk version "17.0.2"'. Got $(java --version)"
+  exit 1
+fi
+fjm use --tool gradle 8.10.0
+if [ "$(gradle --version)" != 'Gradle 8.10.0' ]; then
+  echo "Expected gradle version to be 'Gradle 8.10.0'. Got $(gradle --version)"
+  exit 1
+fi
+if [ "$(java --version)" != 'openjdk version "17.0.2"' ]; then
+  echo "Expected java version to be 'openjdk version "17.0.2"'. Got $(java --version)"
+  exit 1
+fi"
+`;
+
+exports[`Zsh use --tool gradle works with no Java version active: Zsh 1`] = `
+"set -e
+eval "$(fjm env)"
+fjm use --tool gradle 8.10.0
+if [ "$(gradle --version)" != 'Gradle 8.10.0' ]; then
+  echo "Expected gradle version to be 'Gradle 8.10.0'. Got $(gradle --version)"
+  exit 1
+fi"
+`;

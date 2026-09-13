@@ -29,6 +29,17 @@ pub struct FjmConfig {
     )]
     pub maven_dist_mirror: Url,
 
+    /// Gradle distribution service base URL override, used to resolve and
+    /// download Gradle distributions. Symmetric to `--maven-dist-mirror`.
+    #[clap(
+        long,
+        env = "FJM_GRADLE_DIST_MIRROR",
+        default_value = "https://services.gradle.org",
+        global = true,
+        hide_env_values = true
+    )]
+    pub gradle_dist_mirror: Url,
+
     /// The root directory of fjm installations.
     #[clap(
         long = "fjm-dir",
@@ -86,6 +97,7 @@ impl Default for FjmConfig {
         Self {
             jdk_dist_mirror: Url::parse("https://api.adoptium.net").unwrap(),
             maven_dist_mirror: Url::parse("https://repo.maven.apache.org/maven2").unwrap(),
+            gradle_dist_mirror: Url::parse("https://services.gradle.org").unwrap(),
             base_dir: None,
             multishell_path: None,
             log_level: LogLevel::Info,
@@ -134,6 +146,7 @@ impl FjmConfig {
         match tool {
             ToolKind::Java => &self.jdk_dist_mirror,
             ToolKind::Maven => &self.maven_dist_mirror,
+            ToolKind::Gradle => &self.gradle_dist_mirror,
         }
     }
 
@@ -165,7 +178,7 @@ impl FjmConfig {
     pub fn aliases_dir_for(&self, tool: ToolKind) -> std::path::PathBuf {
         let dir_name = match tool {
             ToolKind::Java => "aliases".to_string(),
-            ToolKind::Maven => format!("aliases-{tool}"),
+            ToolKind::Maven | ToolKind::Gradle => format!("aliases-{tool}"),
         };
         self.base_dir_with_default()
             .join(dir_name)
@@ -213,6 +226,26 @@ mod tests {
     }
 
     #[test]
+    fn test_gradle_gets_its_own_aliases_dir() {
+        let base_dir = tempfile::tempdir().unwrap();
+        let config = FjmConfig::default().with_base_dir(Some(base_dir.path().to_path_buf()));
+        assert_eq!(
+            config.aliases_dir_for(ToolKind::Gradle),
+            base_dir.path().join("aliases-gradle")
+        );
+    }
+
+    #[test]
+    fn test_gradle_installations_dir_name() {
+        let base_dir = tempfile::tempdir().unwrap();
+        let config = FjmConfig::default().with_base_dir(Some(base_dir.path().to_path_buf()));
+        assert_eq!(
+            config.installations_dir_for(ToolKind::Gradle),
+            base_dir.path().join("gradle-versions")
+        );
+    }
+
+    #[test]
     fn test_multishell_path_for_is_scoped_per_tool() {
         let config = FjmConfig::default()
             .with_multishell_path(std::path::PathBuf::from("/tmp/fjm-multishell"));
@@ -236,6 +269,10 @@ mod tests {
         assert_eq!(
             config.dist_mirror_for(ToolKind::Maven).as_str(),
             "https://repo.maven.apache.org/maven2"
+        );
+        assert_eq!(
+            config.dist_mirror_for(ToolKind::Gradle).as_str(),
+            "https://services.gradle.org/"
         );
     }
 }

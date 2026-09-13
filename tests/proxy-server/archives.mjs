@@ -69,7 +69,19 @@ function crc32(content) {
   return (crc ^ 0xffffffff) >>> 0
 }
 
-/** @param {{ name: string, content: Buffer }[]} files */
+/**
+ * @param {{ name: string, content: Buffer, executable?: boolean }[]} files
+ *
+ * `executable` marks the entry as a unix executable regular file
+ * (`0o100755`) in the central directory's external file attributes, with
+ * "version made by" set to a unix host (high byte `3`) so the `zip` crate's
+ * `ZipFile::unix_mode()` returns `Some(0o100755)` on extraction (see
+ * `src/archive/zip.rs`'s `#[cfg(unix)] fs::set_permissions` block). Without
+ * this, extracted files default to non-executable permissions and a plain
+ * shell-script entry (e.g. the fake `gradle` binary) can't be invoked.
+ * Existing non-executable entries (e.g. the compiled `.exe` stubs used on
+ * Windows, which don't rely on unix mode bits at all) are unaffected.
+ */
 export function buildZip(files) {
   const localParts = []
   const centralParts = []
@@ -78,6 +90,8 @@ export function buildZip(files) {
   for (const file of files) {
     const nameBuf = Buffer.from(file.name, "utf-8")
     const crc = crc32(file.content)
+    const unixMode = file.executable ? 0o100755 : 0o100644
+    const versionMadeBy = (3 << 8) | 20 // high byte 3 = unix host
 
     const localHeader = Buffer.alloc(30)
     localHeader.writeUInt32LE(0x04034b50, 0)
@@ -96,7 +110,7 @@ export function buildZip(files) {
 
     const centralHeader = Buffer.alloc(46)
     centralHeader.writeUInt32LE(0x02014b50, 0)
-    centralHeader.writeUInt16LE(20, 4)
+    centralHeader.writeUInt16LE(versionMadeBy, 4)
     centralHeader.writeUInt16LE(20, 6)
     centralHeader.writeUInt16LE(0, 8)
     centralHeader.writeUInt16LE(0, 10)
@@ -110,7 +124,7 @@ export function buildZip(files) {
     centralHeader.writeUInt16LE(0, 32)
     centralHeader.writeUInt16LE(0, 34)
     centralHeader.writeUInt16LE(0, 36)
-    centralHeader.writeUInt32LE(0, 38)
+    centralHeader.writeUInt32LE((unixMode << 16) >>> 0, 38)
     centralHeader.writeUInt32LE(offset, 42)
 
     centralParts.push(centralHeader, nameBuf)

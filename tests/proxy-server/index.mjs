@@ -82,6 +82,84 @@ ${versionsXml}
 }
 
 /**
+ * Fixture Gradle distribution-service-shaped endpoints, alongside the Maven
+ * ones above: `GET /versions/all` (used by `fjm ls-remote --tool
+ * gradle`/`fjm install --tool gradle <version>` to resolve `--latest`/major-
+ * minor requests) and `GET /distributions/gradle-:version-bin.zip` plus its
+ * `.sha256` sidecar (used by the actual download/checksum step — see
+ * `src/remote_gradle_index.rs`/`src/downloader.rs`'s `ChecksumSource::Embedded`).
+ *
+ * Deliberately mixed two/three-component versions so the
+ * `coerce_gradle_semver` path is exercised end-to-end by real installs, not
+ * just unit tests.
+ */
+const GRADLE_FIXTURE_VERSIONS = ["8.10", "9.0.0"]
+
+/** @param {string} version */
+function gradleArchiveName(version) {
+  return `gradle-${version}-bin.zip`
+}
+
+/** @param {string} version */
+async function buildGradleArchive(version) {
+  const dirName = `gradle-${version}`
+  const versionLine = `Gradle ${version}`
+
+  // Gradle ships zip unconditionally on every platform (unlike Adoptium/Maven,
+  // which use tar.gz on unix), matching the unix `.zip` arm added to
+  // `archive_for_name` in `src/downloader.rs`.
+  if (process.platform === "win32") {
+    const stubExePath = await getCompiledStubPath()
+    return buildZip([
+      { name: `${dirName}/bin/gradle.exe`, content: readFileSync(stubExePath) },
+      {
+        name: `${dirName}/bin/stub-output.txt`,
+        content: Buffer.from(`${versionLine}\n`, "utf-8"),
+      },
+    ])
+  }
+
+  return buildZip([
+    {
+      name: `${dirName}/bin/gradle`,
+      content: Buffer.from(`#!/bin/sh\necho '${versionLine}'\n`, "utf-8"),
+      executable: true,
+    },
+  ])
+}
+
+/** @type {Map<string, Buffer>} */
+const GRADLE_ARCHIVES = new Map()
+
+export async function gradleReady() {
+  for (const [version, bytes] of await Promise.all(
+    GRADLE_FIXTURE_VERSIONS.map(async (version) => [version, await buildGradleArchive(version)]),
+  )) {
+    GRADLE_ARCHIVES.set(version, bytes)
+  }
+}
+
+function gradleVersionsAllBody() {
+  return JSON.stringify(
+    GRADLE_FIXTURE_VERSIONS.map((version) => {
+      const bytes = GRADLE_ARCHIVES.get(version)
+      const checksum = crypto.createHash("sha256").update(bytes).digest("hex")
+      return {
+        version,
+        snapshot: false,
+        nightly: false,
+        rcFor: "",
+        milestoneFor: "",
+        broken: false,
+        downloadUrl: `http://localhost:8080/distributions/${gradleArchiveName(version)}`,
+        checksumUrl: `http://localhost:8080/distributions/${gradleArchiveName(version)}.sha256`,
+        checksum,
+      }
+    }),
+  )
+}
+
+/**
  * Real-shaped Adoptium/Temurin API v3 fixture server used by the e2e suite.
  *
  * Serves `/v3/info/available_releases`,
@@ -165,6 +243,7 @@ export async function ready() {
     ARCHIVES.set(major, archive)
   }
   await mavenReady()
+  await gradleReady()
 }
 
 function availableReleasesBody() {
@@ -333,6 +412,37 @@ export const server = createServer((req, res) => {
       }
 
       console.log(chalk.green.dim(`[proxy] serving maven archive bytes for ${version}`))
+      res.writeHead(200, { "content-type": "application/octet-stream" })
+      res.end(bytes)
+      return
+    }
+  }
+
+  if (pathname === "/versions/all") {
+    console.log(chalk.green.dim(`[proxy] serving Gradle versions/all fixture`))
+    res.writeHead(200, { "content-type": "application/json" })
+    res.end(gradleVersionsAllBody())
+    return
+  }
+
+  const gradleArtifactMatch = pathname.match(
+    /^\/distributions\/gradle-([^/]+)-bin\.zip(\.sha256)?$/,
+  )
+  if (gradleArtifactMatch) {
+    const version = gradleArtifactMatch[1]
+    const isSidecar = Boolean(gradleArtifactMatch[2])
+    const bytes = GRADLE_ARCHIVES.get(version)
+
+    if (bytes) {
+      if (isSidecar) {
+        const digest = crypto.createHash("sha256").update(bytes).digest("hex")
+        console.log(chalk.green.dim(`[proxy] serving gradle .sha256 sidecar for ${version}`))
+        res.writeHead(200, { "content-type": "text/plain" })
+        res.end(digest)
+        return
+      }
+
+      console.log(chalk.green.dim(`[proxy] serving gradle archive bytes for ${version}`))
       res.writeHead(200, { "content-type": "application/octet-stream" })
       res.end(bytes)
       return

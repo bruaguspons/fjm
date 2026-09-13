@@ -1,0 +1,98 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Bash install --tool gradle from .gradle-version: Bash 1`] = `
+"set -e
+eval "$(fjm env)"
+fjm install --tool gradle --use
+if [ "$(gradle --version)" != 'Gradle 9.0.0' ]; then
+  echo "Expected gradle version to be 'Gradle 9.0.0'. Got $(gradle --version)"
+  exit 1
+fi"
+`;
+
+exports[`Bash install --tool gradle resolves a two-component version against the fixture server: Bash 1`] = `
+"set -e
+eval "$(fjm env)"
+fjm install --tool gradle 8.10 --use
+if [ "$(gradle --version)" != 'Gradle 8.10' ]; then
+  echo "Expected gradle version to be 'Gradle 8.10'. Got $(gradle --version)"
+  exit 1
+fi"
+`;
+
+exports[`Bash installing a Gradle version not present in the fixture server fails clearly: Bash 1`] = `
+"set -e
+eval "$(fjm env)"
+(fjm install --tool gradle 1.0.0 2>&1) | grep 'no Gradle asset found for version' || (echo "Expected output to contain 'no Gradle asset found for version'" && exit 1)"
+`;
+
+exports[`Fish install --tool gradle from .gradle-version: Fish 1`] = `
+"fjm env | source
+fjm install --tool gradle --use
+set ____test____ (gradle --version)
+if test "$____test____" != 'Gradle 9.0.0'
+  echo "Expected gradle version to be 'Gradle 9.0.0'. Got $____test____"
+  exit 1
+end"
+`;
+
+exports[`Fish install --tool gradle resolves a two-component version against the fixture server: Fish 1`] = `
+"fjm env | source
+fjm install --tool gradle 8.10 --use
+set ____test____ (gradle --version)
+if test "$____test____" != 'Gradle 8.10'
+  echo "Expected gradle version to be 'Gradle 8.10'. Got $____test____"
+  exit 1
+end"
+`;
+
+exports[`Fish installing a Gradle version not present in the fixture server fails clearly: Fish 1`] = `
+"fjm env | source
+begin; fjm install --tool gradle 1.0.0 2>&1; end | grep 'no Gradle asset found for version'; or echo "Expected output to contain 'no Gradle asset found for version'" && exit 1"
+`;
+
+exports[`PowerShell install --tool gradle from .gradle-version: PowerShell 1`] = `
+"$ErrorActionPreference = "Stop"
+fjm env | Out-String | Invoke-Expression
+fjm install --tool gradle --use
+if ( "$(gradle --version)" -ne 'Gradle 9.0.0' ) { echo "Expected gradle version to be 'Gradle 9.0.0'. Got $(gradle --version)"; exit 1 }"
+`;
+
+exports[`PowerShell install --tool gradle resolves a two-component version against the fixture server: PowerShell 1`] = `
+"$ErrorActionPreference = "Stop"
+fjm env | Out-String | Invoke-Expression
+fjm install --tool gradle 8.10 --use
+if ( "$(gradle --version)" -ne 'Gradle 8.10' ) { echo "Expected gradle version to be 'Gradle 8.10'. Got $(gradle --version)"; exit 1 }"
+`;
+
+exports[`PowerShell installing a Gradle version not present in the fixture server fails clearly: PowerShell 1`] = `
+"$ErrorActionPreference = "Stop"
+fjm env | Out-String | Invoke-Expression
+$($__out__ = $(fjm install --tool gradle 1.0.0 2>&1 | Select-String 'no Gradle asset found for version'); if ($__out__ -eq $null) { exit 1 } else { $__out__ })"
+`;
+
+exports[`Zsh install --tool gradle from .gradle-version: Zsh 1`] = `
+"set -e
+eval "$(fjm env)"
+fjm install --tool gradle --use
+if [ "$(gradle --version)" != 'Gradle 9.0.0' ]; then
+  echo "Expected gradle version to be 'Gradle 9.0.0'. Got $(gradle --version)"
+  exit 1
+fi"
+`;
+
+exports[`Zsh install --tool gradle resolves a two-component version against the fixture server: Zsh 1`] = `
+"set -e
+eval "$(fjm env)"
+fjm install --tool gradle 8.10 --use
+if [ "$(gradle --version)" != 'Gradle 8.10' ]; then
+  echo "Expected gradle version to be 'Gradle 8.10'. Got $(gradle --version)"
+  exit 1
+fi"
+`;
+
+exports[`Zsh installing a Gradle version not present in the fixture server fails clearly: Zsh 1`] = `
+"set -e
+eval "$(fjm env)"
+(fjm install --tool gradle 1.0.0 2>&1) | grep 'no Gradle asset found for version' || (echo "Expected output to contain 'no Gradle asset found for version'" && exit 1)"
+`;

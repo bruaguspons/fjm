@@ -3,6 +3,7 @@ use crate::config;
 use crate::lts::LtsType;
 use crate::system_version;
 use crate::tool_kind::ToolKind;
+use std::borrow::Cow;
 use std::str::FromStr;
 
 #[derive(Debug, PartialEq, PartialOrd, Eq, Ord, Clone)]
@@ -32,6 +33,38 @@ fn is_legacy_update_format(version_plain: &str) -> bool {
                 && after.chars().all(|c| c.is_ascii_digit())
         }
         None => false,
+    }
+}
+
+/// Coerces a two- (or one-) component Gradle version string into a full
+/// three-component semver by appending `.0` (or `.0.0`), e.g. `8.10` →
+/// `8.10.0`, `9.0` → `9.0.0`, `8.11-rc-1` → `8.11.0-rc-1`. Gradle publishes
+/// versions with as few as two dotted numeric components, which
+/// `node_semver::Version::parse` can't parse directly.
+///
+/// The numeric core is split off from any `-`/`+` suffix (pre-release/build
+/// metadata) before counting components, and the suffix is reattached
+/// unchanged afterwards. A version that already has 3+ numeric components,
+/// or whose core isn't purely ASCII-numeric-dotted, passes through
+/// unmodified.
+fn coerce_gradle_semver(version_plain: &str) -> Cow<'_, str> {
+    let suffix_start = version_plain
+        .find(['-', '+'])
+        .unwrap_or(version_plain.len());
+    let (core, suffix) = version_plain.split_at(suffix_start);
+
+    let is_numeric_dotted = !core.is_empty()
+        && core
+            .split('.')
+            .all(|part| !part.is_empty() && part.chars().all(|c| c.is_ascii_digit()));
+    if !is_numeric_dotted {
+        return Cow::Borrowed(version_plain);
+    }
+
+    match core.matches('.').count() {
+        0 => Cow::Owned(format!("{core}.0.0{suffix}")),
+        1 => Cow::Owned(format!("{core}.0{suffix}")),
+        _ => Cow::Borrowed(version_plain),
     }
 }
 
@@ -70,7 +103,12 @@ impl Version {
             if tool == ToolKind::Java && is_legacy_update_format(version_plain) {
                 return Err(Error::LegacyFormatNotSupported);
             }
-            let sver = node_semver::Version::parse(version_plain)?;
+            let version_plain = if tool == ToolKind::Gradle {
+                coerce_gradle_semver(version_plain)
+            } else {
+                Cow::Borrowed(version_plain)
+            };
+            let sver = node_semver::Version::parse(version_plain.as_ref())?;
             Ok(Self::Semver(sver))
         } else {
             Ok(Self::Alias(lowercased))
@@ -241,6 +279,60 @@ mod tests {
 
     #[test]
     fn test_maven_plain_version_parses() {
+        assert!(matches!(
+            Version::parse("3.9.9", ToolKind::Maven),
+            Ok(Version::Semver(_))
+        ));
+    }
+
+    #[test]
+    fn test_gradle_two_component_version_is_coerced_to_three() {
+        assert_eq!(
+            Version::parse("8.10", ToolKind::Gradle).unwrap().v_str(),
+            "v8.10.0"
+        );
+        assert_eq!(
+            Version::parse("9.0", ToolKind::Gradle).unwrap().v_str(),
+            "v9.0.0"
+        );
+    }
+
+    #[test]
+    fn test_gradle_two_component_prerelease_is_coerced() {
+        assert_eq!(
+            Version::parse("8.11-rc-1", ToolKind::Gradle)
+                .unwrap()
+                .v_str(),
+            "v8.11.0-rc-1"
+        );
+    }
+
+    #[test]
+    fn test_gradle_three_component_version_is_unchanged() {
+        assert_eq!(
+            Version::parse("8.10.2", ToolKind::Gradle).unwrap().v_str(),
+            "v8.10.2"
+        );
+    }
+
+    #[test]
+    fn test_coerce_gradle_semver_directly() {
+        assert_eq!(coerce_gradle_semver("8.10"), "8.10.0");
+        assert_eq!(coerce_gradle_semver("9.0"), "9.0.0");
+        assert_eq!(coerce_gradle_semver("8.11-rc-1"), "8.11.0-rc-1");
+        assert_eq!(coerce_gradle_semver("8.10.2"), "8.10.2");
+    }
+
+    #[test]
+    fn test_maven_two_component_version_is_not_coerced() {
+        // Maven's own `remote_maven_index::list` already drops bare `"3.0"`
+        // via `filter_map(...).ok()`, so coercion must stay Gradle-only: an
+        // unconditional coercion would silently change Maven's behavior.
+        assert!(Version::parse("3.0", ToolKind::Maven).is_err());
+    }
+
+    #[test]
+    fn test_maven_three_component_version_still_parses() {
         assert!(matches!(
             Version::parse("3.9.9", ToolKind::Maven),
             Ok(Version::Semver(_))

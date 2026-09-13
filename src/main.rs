@@ -23,6 +23,7 @@ mod lts;
 mod lts_latest_selector;
 mod path_ext;
 mod progress;
+mod remote_gradle_index;
 mod remote_maven_index;
 mod remote_node_index;
 mod remote_version_index;

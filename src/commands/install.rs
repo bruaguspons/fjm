@@ -9,6 +9,7 @@ use crate::lts::LtsType;
 use crate::lts_latest_selector;
 use crate::outln;
 use crate::progress::ProgressConfig;
+use crate::remote_gradle_index;
 use crate::remote_maven_index;
 use crate::remote_node_index;
 use crate::remote_version_index::ResolvedAsset;
@@ -66,6 +67,7 @@ impl Command for Install {
         match self.tool {
             ToolKind::Java => install_java(self, config),
             ToolKind::Maven => install_maven(self, config),
+            ToolKind::Gradle => install_gradle(self, config),
         }
     }
 }
@@ -216,6 +218,81 @@ fn install_maven(install: Install, config: &FjmConfig) -> Result<(), Error> {
         Info,
         "Installing {}",
         format!("Maven {version}").cyan()
+    );
+
+    install_and_alias(
+        config,
+        tool,
+        &current_version,
+        &version,
+        &resolved_asset,
+        show_progress,
+        use_installed,
+    )
+}
+
+fn install_gradle(install: Install, config: &FjmConfig) -> Result<(), Error> {
+    let current_dir = std::env::current_dir().unwrap();
+    let show_progress = install.progress.enabled(config);
+    let use_installed = install.r#use;
+    let tool = ToolKind::Gradle;
+
+    let current_version = install
+        .version()?
+        .or_else(|| get_user_version_for_directory_for_tool(current_dir, config, tool))
+        .ok_or(Error::CantInferVersion)?;
+
+    if let UserVersion::Full(v @ (Version::Bypassed | Version::Alias(_))) = &current_version {
+        return Err(Error::UninstallableVersion { version: v.clone() });
+    }
+
+    let requested_version_str = match &current_version {
+        UserVersion::Full(Version::Latest) => {
+            let available = remote_gradle_index::list(config.dist_mirror_for(tool))
+                .map_err(|source| Error::CantListRemoteGradleVersions { source })?;
+            let picked = available.into_iter().max().ok_or(Error::CantFindLatest)?;
+            picked.v_str().trim_start_matches('v').to_string()
+        }
+        UserVersion::Full(Version::Semver(_)) => current_version
+            .to_string()
+            .trim_start_matches('v')
+            .to_string(),
+        UserVersion::OnlyMajor(_) | UserVersion::MajorMinor(_, _) => {
+            // Gradle's distribution service doesn't expose a major-only
+            // listing endpoint either; resolve the exact matching version(s)
+            // from the full (coerced) listing instead, same as Maven.
+            let available = remote_gradle_index::list(config.dist_mirror_for(tool))
+                .map_err(|source| Error::CantListRemoteGradleVersions { source })?;
+            current_version
+                .to_version_for_tool(&available, config, tool)
+                .ok_or_else(|| Error::CantFindGradleVersion {
+                    requested_version: current_version.clone(),
+                })?
+                .v_str()
+                .trim_start_matches('v')
+                .to_string()
+        }
+        UserVersion::Full(Version::Lts(_)) => {
+            return Err(Error::LtsNotSupportedForGradle);
+        }
+        UserVersion::SemverRange(_) | UserVersion::Full(Version::Bypassed | Version::Alias(_)) => {
+            return Err(Error::CantFindGradleVersion {
+                requested_version: current_version.clone(),
+            });
+        }
+    };
+
+    let resolved_asset =
+        remote_gradle_index::resolve_asset(config.dist_mirror_for(tool), &requested_version_str)
+            .map_err(|source| Error::CantResolveGradleAsset { source })?;
+
+    let version = resolved_asset.version.clone();
+
+    outln!(
+        config,
+        Info,
+        "Installing {}",
+        format!("Gradle {version}").cyan()
     );
 
     install_and_alias(
@@ -422,6 +499,8 @@ pub enum Error {
     CantListRemoteVersions { source: remote_node_index::Error },
     #[error(transparent)]
     CantListRemoteMavenVersions { source: remote_maven_index::Error },
+    #[error(transparent)]
+    CantListRemoteGradleVersions { source: remote_gradle_index::Error },
     #[error(
         "Can't find a JDK version that matches {} in remote",
         requested_version
@@ -432,6 +511,11 @@ pub enum Error {
         requested_version
     )]
     CantFindMavenVersion { requested_version: UserVersion },
+    #[error(
+        "Can't find a Gradle version that matches {} in remote",
+        requested_version
+    )]
+    CantFindGradleVersion { requested_version: UserVersion },
     #[error("Can't find relevant LTS named {}", lts_type)]
     CantFindRelevantLts { lts_type: crate::lts::LtsType },
     #[error("Can't resolve LTS {}: {}", lts_type, source)]
@@ -441,6 +525,8 @@ pub enum Error {
     },
     #[error("Maven has no LTS concept; pass an exact version or --latest instead")]
     LtsNotSupportedForMaven,
+    #[error("Gradle has no LTS concept; pass an exact version or --latest instead")]
+    LtsNotSupportedForGradle,
     #[error("Can't find any versions in the upstream version index.")]
     CantFindLatest,
     #[error("The requested version is not installable: {}", version.v_str())]
@@ -456,6 +542,8 @@ pub enum Error {
     CantResolveAsset { source: remote_node_index::Error },
     #[error(transparent)]
     CantResolveMavenAsset { source: remote_maven_index::Error },
+    #[error(transparent)]
+    CantResolveGradleAsset { source: remote_gradle_index::Error },
 }
 
 #[cfg(test)]
@@ -611,5 +699,22 @@ mod tests {
         .apply(&config)
         .unwrap_err();
         assert!(matches!(err, Error::LtsNotSupportedForMaven));
+    }
+
+    #[test]
+    fn test_gradle_install_rejects_lts_selector() {
+        let base_dir = tempfile::tempdir().unwrap();
+        let config = FjmConfig::default().with_base_dir(Some(base_dir.path().to_path_buf()));
+        let err = Install {
+            version: Some(UserVersion::Full(Version::Lts(LtsType::Latest))),
+            tool: ToolKind::Gradle,
+            lts: false,
+            latest: false,
+            progress: ProgressConfig::Never,
+            r#use: false,
+        }
+        .apply(&config)
+        .unwrap_err();
+        assert!(matches!(err, Error::LtsNotSupportedForGradle));
     }
 }

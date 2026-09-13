@@ -1,4 +1,5 @@
 use crate::config::FjmConfig;
+use crate::remote_gradle_index;
 use crate::remote_maven_index;
 use crate::remote_node_index;
 use crate::tool_kind::ToolKind;
@@ -56,6 +57,7 @@ impl super::command::Command for LsRemote {
         match self.tool {
             ToolKind::Java => self.list_java(config),
             ToolKind::Maven => self.list_maven(config),
+            ToolKind::Gradle => self.list_gradle(config),
         }
     }
 }
@@ -122,6 +124,31 @@ impl LsRemote {
 
         Ok(())
     }
+
+    fn list_gradle(self, config: &FjmConfig) -> Result<(), Error> {
+        let mut all_versions = remote_gradle_index::list(config.dist_mirror_for(ToolKind::Gradle))?;
+
+        all_versions.sort();
+
+        if self.latest {
+            truncate_except_latest(&mut all_versions);
+        }
+
+        if let SortingMethod::Descending = self.sort {
+            all_versions.reverse();
+        }
+
+        if all_versions.is_empty() {
+            eprintln!("{}", "No versions were found!".red());
+            return Ok(());
+        }
+
+        for version in &all_versions {
+            println!("{}", version.v_str());
+        }
+
+        Ok(())
+    }
 }
 
 #[derive(Debug, Error)]
@@ -135,6 +162,11 @@ pub enum Error {
     RemoteMavenListing {
         #[from]
         source: remote_maven_index::Error,
+    },
+    #[error(transparent)]
+    RemoteGradleListing {
+        #[from]
+        source: remote_gradle_index::Error,
     },
 }
 

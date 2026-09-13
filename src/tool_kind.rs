@@ -12,6 +12,7 @@ use clap::ValueEnum;
 pub enum ToolKind {
     Java,
     Maven,
+    Gradle,
 }
 
 impl Default for ToolKind {
@@ -29,7 +30,7 @@ impl ToolKind {
     /// multi-slot activation loop in `commands::env` and the all-tools
     /// default output of `current`/`list`.
     pub fn all() -> &'static [ToolKind] {
-        &[ToolKind::Java, ToolKind::Maven]
+        &[ToolKind::Java, ToolKind::Maven, ToolKind::Gradle]
     }
 
     /// The env var fjm exports for this tool's active installation root.
@@ -37,6 +38,7 @@ impl ToolKind {
         match self {
             Self::Java => "JAVA_HOME",
             Self::Maven => "MAVEN_HOME",
+            Self::Gradle => "GRADLE_HOME",
         }
     }
 
@@ -45,6 +47,7 @@ impl ToolKind {
         match self {
             Self::Java => ".java-version",
             Self::Maven => ".maven-version",
+            Self::Gradle => ".gradle-version",
         }
     }
 
@@ -59,6 +62,7 @@ impl ToolKind {
         match self {
             Self::Java => "node-versions",
             Self::Maven => "maven-versions",
+            Self::Gradle => "gradle-versions",
         }
     }
 
@@ -68,6 +72,7 @@ impl ToolKind {
         match self {
             Self::Java => "java",
             Self::Maven => "maven",
+            Self::Gradle => "gradle",
         }
     }
 }
@@ -88,20 +93,25 @@ mod tests {
     }
 
     #[test]
-    fn test_all_contains_both_tools() {
-        assert_eq!(ToolKind::all(), &[ToolKind::Java, ToolKind::Maven]);
+    fn test_all_contains_every_tool() {
+        assert_eq!(
+            ToolKind::all(),
+            &[ToolKind::Java, ToolKind::Maven, ToolKind::Gradle]
+        );
     }
 
     #[test]
     fn test_env_var_names() {
         assert_eq!(ToolKind::Java.env_var_name(), "JAVA_HOME");
         assert_eq!(ToolKind::Maven.env_var_name(), "MAVEN_HOME");
+        assert_eq!(ToolKind::Gradle.env_var_name(), "GRADLE_HOME");
     }
 
     #[test]
     fn test_version_file_names() {
         assert_eq!(ToolKind::Java.version_file_name(), ".java-version");
         assert_eq!(ToolKind::Maven.version_file_name(), ".maven-version");
+        assert_eq!(ToolKind::Gradle.version_file_name(), ".gradle-version");
     }
 
     #[test]
@@ -112,5 +122,15 @@ mod tests {
     #[test]
     fn test_maven_gets_its_own_dir_name() {
         assert_eq!(ToolKind::Maven.dir_name(), "maven-versions");
+    }
+
+    #[test]
+    fn test_gradle_gets_its_own_dir_name() {
+        assert_eq!(ToolKind::Gradle.dir_name(), "gradle-versions");
+    }
+
+    #[test]
+    fn test_gradle_as_str() {
+        assert_eq!(ToolKind::Gradle.as_str(), "gradle");
     }
 }

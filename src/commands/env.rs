@@ -146,6 +146,10 @@ impl Command for Env {
                 "FJM_MAVEN_DIST_MIRROR".to_string(),
                 config.maven_dist_mirror.as_str().to_string(),
             ),
+            (
+                "FJM_GRADLE_DIST_MIRROR".to_string(),
+                config.gradle_dist_mirror.as_str().to_string(),
+            ),
             ("FJM_ARCH".to_string(), config.arch.as_str().to_string()),
         ];
 

@@ -33,6 +33,12 @@ Options:
           [env: FJM_MAVEN_DIST_MIRROR]
           [default: https://repo.maven.apache.org/maven2]
 
+      --gradle-dist-mirror <GRADLE_DIST_MIRROR>
+          Gradle distribution service base URL override, used to resolve and download Gradle distributions. Symmetric to `--maven-dist-mirror`
+
+          [env: FJM_GRADLE_DIST_MIRROR]
+          [default: https://services.gradle.org]
+
       --fjm-dir <BASE_DIR>
           The root directory of fjm installations
 
@@ -86,7 +92,7 @@ Options:
           Which tool's remote index to list
 
           [default: java]
-          [possible values: java, maven]
+          [possible values: java, maven, gradle]
 
       --filter <FILTER>
           Filter versions by a user-defined version or a semver range
@@ -97,13 +103,19 @@ Options:
           [env: FJM_MAVEN_DIST_MIRROR]
           [default: https://repo.maven.apache.org/maven2]
 
+      --gradle-dist-mirror <GRADLE_DIST_MIRROR>
+          Gradle distribution service base URL override, used to resolve and download Gradle distributions. Symmetric to `--maven-dist-mirror`
+
+          [env: FJM_GRADLE_DIST_MIRROR]
+          [default: https://services.gradle.org]
+
+      --lts
+          Show only LTS versions (Java only)
+
       --fjm-dir <BASE_DIR>
           The root directory of fjm installations
 
           [env: FJM_DIR]
-
-      --lts
-          Show only LTS versions (Java only)
 
       --sort <SORT>
           Version sorting order
@@ -161,13 +173,19 @@ Options:
       --tool <TOOL>
           Restrict listing to a single tool. When omitted, every tool's installed versions are listed
 
-          [possible values: java, maven]
+          [possible values: java, maven, gradle]
 
       --maven-dist-mirror <MAVEN_DIST_MIRROR>
           Maven Central (or a mirror) base URL override, used to resolve and download Maven distributions. Symmetric to `--jdk-dist-mirror`
 
           [env: FJM_MAVEN_DIST_MIRROR]
           [default: https://repo.maven.apache.org/maven2]
+
+      --gradle-dist-mirror <GRADLE_DIST_MIRROR>
+          Gradle distribution service base URL override, used to resolve and download Gradle distributions. Symmetric to `--maven-dist-mirror`
+
+          [env: FJM_GRADLE_DIST_MIRROR]
+          [default: https://services.gradle.org]
 
       --fjm-dir <BASE_DIR>
           The root directory of fjm installations
@@ -223,7 +241,7 @@ Options:
           Which tool to install a version for
 
           [default: java]
-          [possible values: java, maven]
+          [possible values: java, maven, gradle]
 
       --lts
           Install latest LTS (Java only)
@@ -234,13 +252,19 @@ Options:
           [env: FJM_MAVEN_DIST_MIRROR]
           [default: https://repo.maven.apache.org/maven2]
 
+      --gradle-dist-mirror <GRADLE_DIST_MIRROR>
+          Gradle distribution service base URL override, used to resolve and download Gradle distributions. Symmetric to `--maven-dist-mirror`
+
+          [env: FJM_GRADLE_DIST_MIRROR]
+          [default: https://services.gradle.org]
+
+      --latest
+          Install latest version
+
       --fjm-dir <BASE_DIR>
           The root directory of fjm installations
 
           [env: FJM_DIR]
-
-      --latest
-          Install latest version
 
       --progress <PROGRESS>
           Show an interactive progress bar for the download status
@@ -248,15 +272,15 @@ Options:
           [default: auto]
           [possible values: auto, never, always]
 
+      --use
+          Use the installed version immediately after installation
+
       --log-level <LOG_LEVEL>
           The log level of fjm commands
 
           [env: FJM_LOGLEVEL]
           [default: info]
           [possible values: quiet, error, info]
-
-      --use
-          Use the installed version immediately after installation
 
       --arch <ARCH>
           Override the architecture of the installed JDK binary. Defaults to arch of fjm binary
@@ -303,7 +327,7 @@ Options:
           Which tool's activation slot to target
 
           [default: java]
-          [possible values: java, maven]
+          [possible values: java, maven, gradle]
 
       --lts
           Use the latest LTS version (Java only)
@@ -314,16 +338,25 @@ Options:
           [env: FJM_MAVEN_DIST_MIRROR]
           [default: https://repo.maven.apache.org/maven2]
 
+      --gradle-dist-mirror <GRADLE_DIST_MIRROR>
+          Gradle distribution service base URL override, used to resolve and download Gradle distributions. Symmetric to `--maven-dist-mirror`
+
+          [env: FJM_GRADLE_DIST_MIRROR]
+          [default: https://services.gradle.org]
+
+      --latest
+          Use the latest version
+
       --fjm-dir <BASE_DIR>
           The root directory of fjm installations
 
           [env: FJM_DIR]
 
-      --latest
-          Use the latest version
-
       --install-if-missing
           Install the version if it isn't installed yet
+
+      --silent-if-unchanged
+          Don't output a message identifying the version being used if it will not change due to execution of this command
 
       --log-level <LOG_LEVEL>
           The log level of fjm commands
@@ -331,9 +364,6 @@ Options:
           [env: FJM_LOGLEVEL]
           [default: info]
           [possible values: quiet, error, info]
-
-      --silent-if-unchanged
-          Don't output a message identifying the version being used if it will not change due to execution of this command
 
       --arch <ARCH>
           Override the architecture of the installed JDK binary. Defaults to arch of fjm binary
@@ -386,6 +416,12 @@ Options:
 
           [env: FJM_MAVEN_DIST_MIRROR]
           [default: https://repo.maven.apache.org/maven2]
+
+      --gradle-dist-mirror <GRADLE_DIST_MIRROR>
+          Gradle distribution service base URL override, used to resolve and download Gradle distributions. Symmetric to `--maven-dist-mirror`
+
+          [env: FJM_GRADLE_DIST_MIRROR]
+          [default: https://services.gradle.org]
 
       --fjm-dir <BASE_DIR>
           The root directory of fjm installations
@@ -447,6 +483,12 @@ Options:
           [env: FJM_MAVEN_DIST_MIRROR]
           [default: https://repo.maven.apache.org/maven2]
 
+      --gradle-dist-mirror <GRADLE_DIST_MIRROR>
+          Gradle distribution service base URL override, used to resolve and download Gradle distributions. Symmetric to `--maven-dist-mirror`
+
+          [env: FJM_GRADLE_DIST_MIRROR]
+          [default: https://services.gradle.org]
+
       --fjm-dir <BASE_DIR>
           The root directory of fjm installations
 
@@ -504,13 +546,19 @@ Options:
           Which tool the alias applies to
 
           [default: java]
-          [possible values: java, maven]
+          [possible values: java, maven, gradle]
 
       --maven-dist-mirror <MAVEN_DIST_MIRROR>
           Maven Central (or a mirror) base URL override, used to resolve and download Maven distributions. Symmetric to `--jdk-dist-mirror`
 
           [env: FJM_MAVEN_DIST_MIRROR]
           [default: https://repo.maven.apache.org/maven2]
+
+      --gradle-dist-mirror <GRADLE_DIST_MIRROR>
+          Gradle distribution service base URL override, used to resolve and download Gradle distributions. Symmetric to `--maven-dist-mirror`
+
+          [env: FJM_GRADLE_DIST_MIRROR]
+          [default: https://services.gradle.org]
 
       --fjm-dir <BASE_DIR>
           The root directory of fjm installations
@@ -566,13 +614,19 @@ Options:
           Which tool the alias belongs to
 
           [default: java]
-          [possible values: java, maven]
+          [possible values: java, maven, gradle]
 
       --maven-dist-mirror <MAVEN_DIST_MIRROR>
           Maven Central (or a mirror) base URL override, used to resolve and download Maven distributions. Symmetric to `--jdk-dist-mirror`
 
           [env: FJM_MAVEN_DIST_MIRROR]
           [default: https://repo.maven.apache.org/maven2]
+
+      --gradle-dist-mirror <GRADLE_DIST_MIRROR>
+          Gradle distribution service base URL override, used to resolve and download Gradle distributions. Symmetric to `--maven-dist-mirror`
+
+          [env: FJM_GRADLE_DIST_MIRROR]
+          [default: https://services.gradle.org]
 
       --fjm-dir <BASE_DIR>
           The root directory of fjm installations
@@ -632,7 +686,7 @@ Options:
           Which tool to set/read the default version for
 
           [default: java]
-          [possible values: java, maven]
+          [possible values: java, maven, gradle]
 
       --lts
           Set the default to the latest LTS version already installed (Java only)
@@ -643,13 +697,19 @@ Options:
           [env: FJM_MAVEN_DIST_MIRROR]
           [default: https://repo.maven.apache.org/maven2]
 
+      --gradle-dist-mirror <GRADLE_DIST_MIRROR>
+          Gradle distribution service base URL override, used to resolve and download Gradle distributions. Symmetric to `--maven-dist-mirror`
+
+          [env: FJM_GRADLE_DIST_MIRROR]
+          [default: https://services.gradle.org]
+
+      --latest
+          Set the default to the latest version already installed
+
       --fjm-dir <BASE_DIR>
           The root directory of fjm installations
 
           [env: FJM_DIR]
-
-      --latest
-          Set the default to the latest version already installed
 
       --log-level <LOG_LEVEL>
           The log level of fjm commands
@@ -695,13 +755,19 @@ Options:
       --tool <TOOL>
           Restrict output to a single tool. When omitted, every tool's active version is shown
 
-          [possible values: java, maven]
+          [possible values: java, maven, gradle]
 
       --maven-dist-mirror <MAVEN_DIST_MIRROR>
           Maven Central (or a mirror) base URL override, used to resolve and download Maven distributions. Symmetric to `--jdk-dist-mirror`
 
           [env: FJM_MAVEN_DIST_MIRROR]
           [default: https://repo.maven.apache.org/maven2]
+
+      --gradle-dist-mirror <GRADLE_DIST_MIRROR>
+          Gradle distribution service base URL override, used to resolve and download Gradle distributions. Symmetric to `--maven-dist-mirror`
+
+          [env: FJM_GRADLE_DIST_MIRROR]
+          [default: https://services.gradle.org]
 
       --fjm-dir <BASE_DIR>
           The root directory of fjm installations
@@ -767,16 +833,22 @@ Options:
           [env: FJM_MAVEN_DIST_MIRROR]
           [default: https://repo.maven.apache.org/maven2]
 
-      --fjm-dir <BASE_DIR>
-          The root directory of fjm installations
+      --gradle-dist-mirror <GRADLE_DIST_MIRROR>
+          Gradle distribution service base URL override, used to resolve and download Gradle distributions. Symmetric to `--maven-dist-mirror`
 
-          [env: FJM_DIR]
+          [env: FJM_GRADLE_DIST_MIRROR]
+          [default: https://services.gradle.org]
 
       --tool <TOOL>
           Which tool's version to resolve `--using` against
 
           [default: java]
-          [possible values: java, maven]
+          [possible values: java, maven, gradle]
+
+      --fjm-dir <BASE_DIR>
+          The root directory of fjm installations
+
+          [env: FJM_DIR]
 
       --lts
           Run using the latest LTS version already installed (Java only)
@@ -835,7 +907,7 @@ Options:
           Which tool to uninstall a version for
 
           [default: java]
-          [possible values: java, maven]
+          [possible values: java, maven, gradle]
 
       --lts
           Uninstall the latest LTS version already installed (Java only)
@@ -846,13 +918,19 @@ Options:
           [env: FJM_MAVEN_DIST_MIRROR]
           [default: https://repo.maven.apache.org/maven2]
 
+      --gradle-dist-mirror <GRADLE_DIST_MIRROR>
+          Gradle distribution service base URL override, used to resolve and download Gradle distributions. Symmetric to `--maven-dist-mirror`
+
+          [env: FJM_GRADLE_DIST_MIRROR]
+          [default: https://services.gradle.org]
+
+      --latest
+          Uninstall the latest version already installed
+
       --fjm-dir <BASE_DIR>
           The root directory of fjm installations
 
           [env: FJM_DIR]
-
-      --latest
-          Uninstall the latest version already installed
 
       --log-level <LOG_LEVEL>
           The log level of fjm commands
